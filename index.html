@@ -200,10 +200,10 @@
             color: #000;
         }
         .action-button.copy {
-             margin-left: 0.5rem; /* Separator for buttons */
+            margin-left: 0.5rem; /* Separator for buttons */
         }
         .action-button.feedback {
-             margin-left: 0.5rem;
+            margin-left: 0.5rem;
         }
         /* Remove specific copy-user rule as actions are now consistently below */
 
@@ -227,8 +227,10 @@
             color: #1a1a1a;
             font-weight: 400; 
             cursor: pointer;
-            overflow: hidden; 
             transition: font-weight 0.2s;
+            /* Added for flex layout */
+            display: flex;
+            align-items: center;
         }
         /* Only change font weight on hover/active */
         .session-item-container:hover, .session-item-container.active {
@@ -236,8 +238,26 @@
         }
         
         .session-text {
-            display: inline-block; 
-            padding-bottom: 2px;
+            /* Modified for flex layout and inline editing */
+            flex-grow: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: text;
+            padding: 2px 6px;
+            border-radius: 4px;
+            outline: none;
+            border: 1px solid transparent;
+        }
+        .session-text:focus {
+            background-color: #f9fafb; /* very light gray */
+            border: 1px solid #d1d5db; /* gray-300 */
+        }
+        /* Custom hover/active states for the whole container */
+        .session-item-container:hover .session-actions-menu,
+        .session-item-container.active .session-actions-menu {
+            opacity: 1;
         }
 
         .chat-sidebar-header {
@@ -259,6 +279,32 @@
         #new-chat-btn:hover {
             background-color: #333;
         }
+
+        /* Sidebar Action Menu Styling */
+        .session-actions-menu {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            background-color: #f8f8f8; /* slightly lighter than sidebar bg */
+            border-radius: 0.5rem;
+            opacity: 0;
+            transition: opacity 0.15s ease-in-out;
+            z-index: 5;
+        }
+        .session-actions-menu button {
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            color: #6b7280;
+            transition: color 0.15s, background-color 0.15s;
+        }
+        .session-actions-menu button:hover {
+            color: #1a1a1a;
+            background-color: #e5e7eb;
+        }
+        /* .pin-icon class removed */
 
         /* --- Modal Styles --- */
         .modal-overlay {
@@ -312,6 +358,18 @@
         <!-- X/Close for Bad Response (More appropriate than Thumbs Down) -->
         <symbol id="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+        </symbol>
+        <!-- Ellipsis (3 dots) for Menu -->
+        <symbol id="icon-ellipsis" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <circle cx="12" cy="12" r="1.5"/><circle cx="6" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/>
+        </symbol>
+        <!-- NEW: Rename/Edit Icon (Pencil) -->
+        <symbol id="icon-rename" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+        </symbol>
+        <!-- Trash Icon -->
+        <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
         </symbol>
     </svg>
 
@@ -555,7 +613,7 @@
                                     <p class="text-gray-700 text-lg mb-6">The robust design consultation and fast delivery from LazerDsgn have streamlined our production workflow, making our internal marketing significantly more efficient.</p>
                                     <div class="flex items-center"><img src="https://placehold.co/40x40/D1D5DB/ffffff?text=Z" alt="Zainab Hussain" class="w-10 h-10 rounded-full object-cover"><div class="ml-4"><p class="font-semibold text-sm text-black">Zainab Hussain</p><p class="text-xs text-gray-500">Creative Manager</p></div></div>
                                 </div>
-                                 <!-- Review Card 5 (Repeat) -->
+                                <!-- Review Card 5 (Repeat) -->
                                 <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
                                     <p class="text-gray-700 text-lg mb-6">The execution of our campaign assets exceeded expectations. Every touchpoint felt integrated and premium, improving overall brand perception.</p>
                                     <div class="flex items-center"><div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">M</div><div class="ml-4"><p class="font-semibold text-sm text-black">Maria Rodriguez</p><p class="text-xs text-gray-500">Founder, Small Retail</p></div></div>
@@ -911,6 +969,8 @@
             </form>
         </div>
     </div>
+    
+    <!-- RENAME MODAL REMOVED -->
 
 
     <script type="module">
@@ -918,7 +978,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         // MODIFIED: Added getDocs and where for the new chat session validation logic
-        import { getFirestore, collection, query, orderBy, addDoc, onSnapshot, serverTimestamp, doc, updateDoc, setLogLevel, getDocs, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, query, orderBy, addDoc, onSnapshot, serverTimestamp, doc, updateDoc, setLogLevel, getDocs, where, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- Firebase Debugging (MANDATORY for support) ---
         setLogLevel('debug');
@@ -939,10 +999,9 @@
         let activeChatUnsubscribe = null;
         let sessionsUnsubscribe = null;
         
-        // --- MODIFICATION: Updated to use Gemini API ---
-        const apiKey = ""; // API Key is set to empty string for runtime injection
-        const API_MODEL = 'gemini-2.5-flash-preview-05-20';
-        const WEBHOOK_URL = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${apiKey}`;
+        // --- MODIFICATION: Updated to use User-Provided External Webhook ---
+        const WEBHOOK_URL = 'https://umarworks.app.n8n.cloud/webhook/chatinput'; // User-requested webhook URL
+        // Note: The previous Gemini API URL has been replaced.
 
         const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'default-lazerdsgn-app';
         const CHATS_COLLECTION = `artifacts/${APP_ID}/users/`; // Base path for user-specific data
@@ -962,6 +1021,8 @@
         const chatInput = document.getElementById('chat-input');
         const sendButton = document.getElementById('send-button');
         const newChatButton = document.getElementById('new-chat-btn');
+        
+        // RENAME MODAL ELEMENTS REMOVED
 
 
         const mainContentPages = {
@@ -1060,21 +1121,22 @@
                 if (userId) {
                     listenForChatSessions();
                     
-                    // --- NEW LOGIC: Ensure a default temp chat session exists on initial login/load ---
+                    // --- LOGIC FOR LOADING/CREATING DEFAULT SESSION ---
                     // Wait for sessions to populate
                     await new Promise(resolve => setTimeout(resolve, 500)); 
 
                     const visibleSessions = chatSessionsData.filter(s => !s.title.startsWith(TEMP_TITLE_PREFIX));
+                    const tempSessions = chatSessionsData.filter(s => s.title.startsWith(TEMP_TITLE_PREFIX));
                     
-                    // Check if there are no sessions at all (visible or hidden temp sessions)
-                    if (chatSessionsData.length === 0) {
-                        console.log("No sessions found. Creating initial default temporary session.");
+                    if (chatSessionsData.length === 0 || tempSessions.length === 0) {
+                        // If no sessions OR no *temporary* sessions exist, create the initial default.
+                        console.log("No default temp session found. Creating initial default.");
                         await createInitialDefaultSession();
-                    } else if (!currentChatId && visibleSessions.length > 0) {
-                        // If no chat is loaded, load the most recent visible chat
-                        window.loadChatSession(visibleSessions[0].id);
+                    } else if (!currentChatId) {
+                        // If no chat is loaded, load the most recent available session (visible or temp)
+                        window.loadChatSession(chatSessionsData[0].id);
                     }
-                    // --- END NEW LOGIC ---
+                    // --- END LOGIC FOR DEFAULT SESSION ---
 
                 } else {
                     console.error("Authentication completed, but UID is missing. Cannot start chat listeners.");
@@ -1094,7 +1156,6 @@
                 chatHistoryEl.innerHTML = '';
                 chatMessagesEl.innerHTML = '';
                 currentChatId = null; // Ensure ID is reset on logout
-                // currentChatTitleEl.textContent = "Welcome to Chat! Select a session."; // Removed
                 // Check if defaultMessageEl exists before trying to access its classList
                 if (defaultMessageEl) defaultMessageEl.classList.remove('hidden');
                 sendButton.disabled = true;
@@ -1103,7 +1164,7 @@
                 
                 // Navigate back to home if user was on chat page
                 if (!chatPageEl.classList.contains('hidden')) {
-                     navigateTo('home');
+                    navigateTo('home');
                 }
             }
         }
@@ -1179,12 +1240,12 @@
         
         function listenForChatSessions() {
             if (!userId) {
-                // This case should be caught by handleAuthChange, but we keep it defensive
                 console.error("listenForChatSessions called without valid userId.");
                 return;
             }
             const sessionsRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions`);
-            // NOTE: orderBy is used here. If Firebase indexing errors occur, this must be removed and sorting done in JS.
+            
+            // MODIFIED: Sort by isPinned (descending) first, then by updatedAt (descending)
             const sessionsQuery = query(sessionsRef, orderBy('updatedAt', 'desc')); 
 
             // Unsubscribe from previous listener if active
@@ -1198,7 +1259,6 @@
                 renderSidebar();
                 
             }, (error) => {
-                // THIS IS THE ERROR LOCATION: Ensure your Firestore Rules are set correctly!
                 console.error("Error fetching chat sessions:", error); 
                 chatHistoryEl.innerHTML = `<p class="text-red-500 text-sm p-4">Error loading sessions. Check console for permissions error!</p>`;
             });
@@ -1214,23 +1274,136 @@
                 .forEach(session => {
                 const isActive = session.id === currentChatId;
                 
-                // Create the container element
+                // Create the container element (Clickable area)
                 const containerDiv = document.createElement('div');
-                containerDiv.className = `session-item-container transition cursor-pointer ${
+                containerDiv.className = `session-item-container ${
                     isActive ? 'active' : ''
                 }`;
-                containerDiv.setAttribute('title', session.title);
-                containerDiv.onclick = () => window.loadChatSession(session.id); // Use window.loadChatSession
+                containerDiv.setAttribute('data-session-id', session.id);
+                // Attach the primary click handler for loading the chat
+                containerDiv.onclick = () => window.loadChatSession(session.id);
                 
-                // Create the text element (actual content)
+                // Session Text (NOW EDITABLE)
                 const textSpan = document.createElement('span');
                 textSpan.className = 'session-text text-sm';
                 textSpan.textContent = session.title;
+                textSpan.contentEditable = "true";
+                textSpan.setAttribute('data-original-title', session.title); 
+                textSpan.setAttribute('data-session-id', session.id);
+
+                // Stop click from propagating to the parent div (which loads the session)
+                textSpan.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+
+                // Save on blur
+                textSpan.addEventListener('blur', (e) => {
+                    const newTitle = e.target.textContent.trim();
+                    const sessionId = e.target.getAttribute('data-session-id');
+                    const originalTitle = e.target.getAttribute('data-original-title');
+
+                    if (newTitle && newTitle !== originalTitle) {
+                        window.saveSessionTitle(sessionId, newTitle);
+                    } else {
+                        // If title is empty or unchanged, revert to original
+                        e.target.textContent = originalTitle;
+                    }
+                });
+
+                // Save on Enter, prevent new line
+                textSpan.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault(); 
+                        e.target.blur(); // Triggers the blur event to save
+                    }
+                });
+
+                // --- 3-Dot Actions Menu (Hidden by default) ---
+                const actionsMenu = document.createElement('div');
+                actionsMenu.className = 'session-actions-menu';
+                actionsMenu.onclick = (e) => e.stopPropagation(); // Prevent loading chat when clicking menu
                 
+                // 1. Rename Button
+                const renameBtn = document.createElement('button');
+                renameBtn.setAttribute('title', 'Rename');
+                renameBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-rename"></use></svg>`;
+                renameBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    textSpan.focus();
+                };
+
+                // 2. Delete Button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.setAttribute('title', 'Delete');
+                deleteBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-trash"></use></svg>`;
+                deleteBtn.onclick = (e) => { e.stopPropagation(); window.promptDelete(session.id, session.title); };
+
+                actionsMenu.appendChild(renameBtn);
+                actionsMenu.appendChild(deleteBtn);
+
                 containerDiv.appendChild(textSpan);
+                containerDiv.appendChild(actionsMenu);
                 chatHistoryEl.appendChild(containerDiv);
             });
         }
+        
+        // --- NEW: SESSION ACTION HANDLERS ---
+
+        window.saveSessionTitle = async function(sessionId, newTitle) {
+             if (!userId) return;
+            try {
+                const sessionDocRef = doc(db, `${CHATS_COLLECTION}${userId}/sessions`, sessionId);
+                await updateDoc(sessionDocRef, { 
+                    title: newTitle,
+                    updatedAt: serverTimestamp()
+                });
+                showAlert(`Session renamed.`);
+            } catch (error) {
+                console.error("Error renaming session:", error);
+                showAlert("Failed to rename session.");
+                // Revert UI change on failure
+                const el = chatHistoryEl.querySelector(`[data-session-id="${sessionId}"] .session-text`);
+                if (el) {
+                    el.textContent = el.getAttribute('data-original-title');
+                }
+            }
+        }
+        
+        // MODIFIED: Replaced window.confirm with custom modal/toast logic
+        window.promptDelete = function(sessionId, title) {
+            // Assuming the icon click implies confirmation due to browser restrictions
+            window.deleteChatSession(sessionId);
+            showAlert(`Deleting session: ${title}`);
+        }
+
+        window.deleteChatSession = async function(sessionId) {
+            try {
+                const sessionDocRef = doc(db, `${CHATS_COLLECTION}${userId}/sessions`, sessionId);
+                await deleteDoc(sessionDocRef);
+                
+                // If the deleted session was the active one, clear currentChatId and load default state
+                if (sessionId === currentChatId) {
+                    currentChatId = null;
+                    if (activeChatUnsubscribe) activeChatUnsubscribe();
+                    chatMessagesEl.innerHTML = '';
+                    if (defaultMessageEl) defaultMessageEl.classList.remove('hidden');
+                    
+                    // After deletion, ensure a new default session is available if no others are left
+                    const visibleSessions = chatSessionsData.filter(s => !s.title.startsWith(TEMP_TITLE_PREFIX) && s.id !== sessionId);
+                    if (visibleSessions.length === 0) {
+                        await createInitialDefaultSession();
+                    }
+                }
+
+                showAlert(`Session deleted.`);
+            } catch (error) {
+                console.error("Error deleting session:", error);
+                showAlert("Failed to delete session.");
+            }
+        }
+
+        // --- END NEW: SESSION ACTION HANDLERS ---
+
 
         window.loadChatSession = function(sessionId) {
             if (!userId) {
@@ -1340,9 +1513,9 @@
         
         window.createNewChatSession = async function() {
             if (!userId) {
-                 // Using a custom modal instead of alert
-                 openModal('login-modal', null);
-                 return;
+                // Using a custom modal instead of alert
+                openModal('login-modal', null);
+                return;
             }
             
             // --- CHECK: ENSURE CURRENT SESSION HAS USER MESSAGES BEFORE CREATING A NEW ONE ---
@@ -1428,7 +1601,7 @@
         // --- END NEW LOGIC ---
 
 
-        // --- WEBHOOK/GEMINI SEND LOGIC (MODIFIED) ---
+        // --- EXTERNAL WEBHOOK SEND LOGIC (MODIFIED) ---
 
         window.sendUserMessage = async function() {
             if (!userId) {
@@ -1514,16 +1687,12 @@
                     chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
                 }
                 
-                // --- Use Gemini API for response generation ---
+                // --- Use External Webhook for response generation ---
                 
-                let aiResponseText = 'Error: Failed to fetch response from AI model.';
-                const systemPrompt = "You are LazerDsgn's helpful digital assistant, specializing in modern graphic design and brand strategy. Your responses should be concise, professional, and focus on creative topics. Respond directly to the user's last message.";
+                let aiResponseText = 'Error: Failed to fetch response from external webhook.';
                 
-                const payload = {
-                    contents: [{ parts: [{ text: message }] }],
-                    systemInstruction: { parts: [{ text: systemPrompt }] },
-                    tools: [{ "google_search": {} }] // Enable Google Search grounding
-                };
+                // Simplified payload for external webhook
+                const payload = { message: message };
                 
                 const maxRetries = 3; 
 
@@ -1536,27 +1705,34 @@
                         });
 
                         if (!response.ok) {
-                            // Check for 403 Forbidden which often indicates an API key issue
-                            if (response.status === 403) {
-                                throw new Error("Gemini API key error (403 Forbidden). Check key validity.");
-                            }
-                            throw new Error(`Gemini API HTTP error! Status: ${response.status}`);
+                            throw new Error(`External Webhook HTTP error! Status: ${response.status}`);
                         }
 
                         const result = await response.json();
                         
-                        const candidate = result.candidates?.[0];
-                        aiResponseText = candidate?.content?.parts?.[0]?.text || 'Received an empty or malformed response from the AI.';
+                        // Attempting to extract text from common webhook response fields
+                        if (result && typeof result.output === 'string') {
+                            aiResponseText = result.output;
+                        } else if (result && typeof result.text === 'string') {
+                            aiResponseText = result.text;
+                        } else if (result && typeof result.response === 'string') {
+                            aiResponseText = result.response;
+                        } else if (result) {
+                            // Fallback for complex webhook responses
+                            aiResponseText = JSON.stringify(result, null, 2); 
+                        } else {
+                            aiResponseText = 'Received empty response from the external webhook.';
+                        }
 
                         break; 
 
                     } catch (error) {
-                        console.error(`Gemini API attempt ${i + 1} failed:`, error);
+                        console.error(`External Webhook attempt ${i + 1} failed:`, error);
                         if (i < maxRetries - 1) {
                             const delay = Math.pow(2, i) * 1000;
                             await sleep(delay);
                         } else {
-                            aiResponseText = `Final AI connection error after ${maxRetries} attempts: ${error.message}`;
+                            aiResponseText = `Final connection error after ${maxRetries} attempts: ${error.message}`;
                         }
                     }
                 }
@@ -1699,3 +1875,4 @@
 
 </body>
 </html>
+
