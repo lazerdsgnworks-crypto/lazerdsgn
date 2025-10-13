@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimalist Corporate Homepage</title>
+    <title>LazerDsgn - Digital Design Studio</title>
     <!-- Load Inter font from Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     <!-- Load Tailwind CSS -->
@@ -164,10 +164,26 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Reset for the loading state to keep it visible */
-        .chat-message-container.ai.loading .chat-message-text {
-            font-style: italic;
-            color: #9ca3af; /* gray-400 */
+        /* Loading animation for AI response */
+        .loading .chat-message-text {
+            position: relative;
+            overflow: hidden;
+            color: #9ca3af;
+        }
+        .loading .chat-message-text::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: glow-slide 2s infinite;
+        }
+        @keyframes glow-slide {
+            0% { left: -100%; }
+            50% { left: 100%; }
+            100% { left: 100%; }
         }
 
 
@@ -204,6 +220,9 @@
         }
         .action-button.feedback {
             margin-left: 0.5rem;
+        }
+        .action-button.feedback.clicked {
+            color: #000;
         }
         /* Remove specific copy-user rule as actions are now consistently below */
 
@@ -244,13 +263,13 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            cursor: text;
             padding: 2px 6px;
             border-radius: 4px;
             outline: none;
             border: 1px solid transparent;
         }
         .session-text:focus {
+            cursor: text;
             background-color: #f9fafb; /* very light gray */
             border: 1px solid #d1d5db; /* gray-300 */
         }
@@ -304,7 +323,27 @@
             color: #1a1a1a;
             background-color: #e5e7eb;
         }
-        /* .pin-icon class removed */
+
+        /* --- Sidebar Collapse Styles --- */
+        #chat-sidebar.collapsed {
+            width: 0;
+            padding: 0;
+            border: none;
+            overflow: hidden;
+        }
+        #collapsed-new-chat-btn {
+            display: none;
+        }
+        body.sidebar-collapsed #collapsed-new-chat-btn {
+            display: inline-flex;
+        }
+        body.sidebar-collapsed #sidebar-toggle-btn svg {
+            transform: rotate(180deg);
+        }
+
+        #voice-button.recording {
+            color: #ef4444; /* red-500 */
+        }
 
         /* --- Modal Styles --- */
         .modal-overlay {
@@ -344,32 +383,90 @@
     </style>
 </head>
 <body class="antialiased">
+    <input type="file" id="image-input" accept="image/*" class="hidden" multiple>
+    <input type="file" id="analysis-file-input" accept="image/*,video/*,audio/*" class="hidden">
+
     
     <!-- SVG Icon Definitions (Hidden) -->
     <svg style="display: none;">
         <symbol id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
         </symbol>
-        <!-- Thumbs Up for Good Response -->
-        <symbol id="icon-thumb-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M7 10v12h10V10H7zM7 10l-4-4V4h4l3 3m7-3l-4 4v4h4v-4l-4-4z"/>
-            <path d="M14 9l1 9"/>
+        <!-- NEW: Heart Icon for Good Response -->
+        <symbol id="icon-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
         </symbol>
-        <!-- X/Close for Bad Response (More appropriate than Thumbs Down) -->
-        <symbol id="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+        <!-- NEW: Flag Icon for Bad Response -->
+        <symbol id="icon-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line>
         </symbol>
         <!-- Ellipsis (3 dots) for Menu -->
         <symbol id="icon-ellipsis" viewBox="0 0 24 24" fill="currentColor" stroke="none">
             <circle cx="12" cy="12" r="1.5"/><circle cx="6" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/>
         </symbol>
-        <!-- NEW: Rename/Edit Icon (Pencil) -->
+        <!-- Rename/Edit Icon (Pencil) -->
         <symbol id="icon-rename" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
         </symbol>
         <!-- Trash Icon -->
         <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </symbol>
+        <!-- Sidebar Toggle Icon -->
+        <symbol id="icon-sidebar-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="9" y1="3" x2="9" y2="21"></line>
+            <path d="m13 16-3-4 3-4"></path>
+        </symbol>
+        <!-- Plus Square Icon -->
+        <symbol id="icon-plus-square" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line>
+        </symbol>
+        <!-- Arrow Left Icon -->
+        <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </symbol>
+        <!-- Microphone Icon -->
+        <symbol id="icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+        </symbol>
+        <!-- Image Icon -->
+        <symbol id="icon-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+        </symbol>
+        <!-- Eye Icon -->
+        <symbol id="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+        </symbol>
+        <!-- Eye Off Icon -->
+        <symbol id="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+        </symbol>
+        <!-- Download Icon -->
+        <symbol id="icon-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+        </symbol>
+        <!-- Analyze Icon (Magic Pen) -->
+        <symbol id="icon-magic-pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            <path d="M18 2l1 2h2l-1.5 1.5L20 7l-2-1-2 1 1-1.5L15 5h2z"></path>
+        </symbol>
+        <symbol id="icon-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
         </symbol>
     </svg>
 
@@ -382,16 +479,17 @@
             <nav class="hidden md:flex space-x-8 text-sm font-medium text-gray-700 items-center">
                 <a href="#" class="hover:text-black" onclick="navigateTo('home', event)">Home</a>
                 <a href="#" class="hover:text-black" onclick="navigateTo('portfolio', event)">Portfolio</a>
-                <a href="#" class="hover:text-black">Studio</a>
+                <a href="#" class="hover:text-black" onclick="navigateTo('about', event)">About</a>
                 <!-- Chat link -->
                 <a href="#" class="hover:text-black" onclick="navigateTo('chat', event)">Chat</a>
+                <a href="#" class="hover:text-black" onclick="navigateTo('image-gen', event)">Image Gen</a>
                 
                 <!-- Login/Logout Link Container -->
                 <div id="auth-link-container">
                     <a href="#" class="font-medium text-black border border-gray-300 rounded-full px-4 py-1.5 hover:bg-gray-50 transition" onclick="openModal('login-modal', event)">Login</a>
                 </div>
             </nav>
-            <button class="md:hidden p-2 rounded-full hover:bg-gray-50">
+            <button id="mobile-menu-button" class="md:hidden p-2 rounded-full hover:bg-gray-50">
                 <!-- Hamburger Icon -->
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
@@ -399,6 +497,31 @@
             </button>
         </div>
     </header>
+
+    <!-- Mobile Menu (Initially Hidden) -->
+    <div id="mobile-menu" class="fixed inset-0 bg-white z-50 transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden">
+        <div class="flex justify-between items-center p-4 border-b border-gray-100">
+            <div class="text-2xl font-bold tracking-tight">
+                <a href="#" class="text-black" onclick="navigateTo('home', event); closeMobileMenu();">LazerDsgn.</a>
+            </div>
+            <button id="close-mobile-menu-button" class="p-2">
+                <!-- Close Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <nav class="flex flex-col space-y-6 p-6 text-lg font-medium text-gray-700">
+            <a href="#" class="hover:text-black" onclick="navigateTo('home', event); closeMobileMenu();">Home</a>
+            <a href="#" class="hover:text-black" onclick="navigateTo('portfolio', event); closeMobileMenu();">Portfolio</a>
+            <a href="#" class="hover:text-black" onclick="navigateTo('about', event); closeMobileMenu();">About</a>
+            <a href="#" class="hover:text-black" onclick="navigateTo('chat', event); closeMobileMenu();">Chat</a>
+            <a href="#" class="hover:text-black" onclick="navigateTo('image-gen', event); closeMobileMenu();">Image Gen</a>
+            <div id="mobile-auth-link-container" class="pt-4">
+                 <a href="#" class="font-medium text-black border border-gray-300 rounded-full px-5 py-2 hover:bg-gray-50 transition" onclick="openModal('login-modal', event); closeMobileMenu();">Login</a>
+            </div>
+        </nav>
+    </div>
 
     <!-- Main Homepage Content (Visible by default) -->
     <main id="homepage-content" class="page-transition visible">
@@ -463,46 +586,46 @@
                     <!-- Project Card Content (Repeated twice for seamless loop) -->
                     <!-- Set 1 -->
                     <a href="#" class="slider-item inline-block relative aspect-[3/4] overflow-hidden rounded-lg shadow-xl transform transition-transform duration-300 hover:scale-[1.02]">
-                        <img src="https://placehold.co/400x533/F3F4F6/1F2937?text=Brand+Refresh" alt="Brand Refresh" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
+                        <img src="https://scontent-yyz1-1.cdninstagram.com/v/t39.30808-6/448053683_18016089239462277_1706490523141910716_n.jpg?stp=dst-jpg_e35_s1080x1080_sh0.08_tt6&_nc_ht=scontent-yyz1-1.cdninstagram.com&_nc_cat=109&_nc_oc=Q6cZ2QG2_RuwZ_cuivMEVLYB8jOsuQzehcFaeVEzXu8RH9E8mEmV3WclLfyu6sZnpafAxHY&_nc_ohc=wjKrwVwJEMQQ7kNvwE3E-aL&_nc_gid=ekLIMfi8Zy_948n0zTlPig&edm=AOQ1c0wAAAAA&ccb=7-5&oh=00_AfekU30Joc3Kekm-hHKY1O_rj_TTOoXpuWaes2rgequdEA&oe=68EC7AF5&_nc_sid=8b3546" alt="Project 1" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Project Nova.</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Visual Identity & Strategy.</p></div>
+                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Project 1</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Visual Identity & Strategy.</p></div>
                     </a>
                     <a href="#" class="slider-item inline-block relative aspect-[3/4] overflow-hidden rounded-lg shadow-xl transform transition-transform duration-300 hover:scale-[1.02]">
-                        <img src="https://placehold.co/400x533/000000/ffffff?text=Web+Design" alt="Web Design" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
+                        <img src="https://scontent-yyz1-1.cdninstagram.com/v/t51.29350-15/443818718_1382545049122221_4199523028025648075_n.jpg?stp=dst-jpg_e35_s1080x1080_tt6&_nc_ht=scontent-yyz1-1.cdninstagram.com&_nc_cat=109&_nc_oc=Q6cZ2QG2_RuwZ_cuivMEVLYB8jOsuQzehcFaeVEzXu8RH9E8mEmV3WclLfyu6sZnpafAxHY&_nc_ohc=LDwMU3PD-UIQ7kNvwEdY_gV&_nc_gid=ekLIMfi8Zy_948n0zTlPig&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_AfdxshxffkYEupiNpSnVctG-qQ0BkTe8Dtc6uHfr58KASA&oe=68EC4365&_nc_sid=8b3546" alt="Project 2" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Studio 47.</h3><p class="text-sm text-gray-300 mt-1">UX/UI for a global SaaS platform.</p></div>
+                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Project 2</h3><p class="text-sm text-gray-300 mt-1">UX/UI for a global SaaS platform.</p></div>
                     </a>
                     <a href="#" class="slider-item inline-block relative aspect-[3/4] overflow-hidden rounded-lg shadow-xl transform transition-transform duration-300 hover:scale-[1.02]">
-                        <img src="https://placehold.co/400x533/ffffff/000000?text=Packaging+Design" alt="Packaging Design" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
+                        <img src="https://scontent-yyz1-1.cdninstagram.com/v/t51.29350-15/436293798_1195941888434583_1689967636691776728_n.jpg?stp=dst-jpg_e35_s1080x1080_tt6&_nc_ht=scontent-yyz1-1.cdninstagram.com&_nc_cat=103&_nc_oc=Q6cZ2QG2_RuwZ_cuivMEVLYB8jOsuQzehcFaeVEzXu8RH9E8mEmV3WclLfyu6sZnpafAxHY&_nc_ohc=dQDojFcTiYoQ7kNvwHSlbVs&_nc_gid=ekLIMfi8Zy_948n0zTlPig&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_AfcCyi-ICJTt1fN8vLDdoUMeg_ibcMD_ufaY0ksevYP8uw&oe=68EC4C26&_nc_sid=8b3546" alt="Project 3" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Vector Labs.</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Product Packaging and Print.</p></div>
+                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Project 3</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Product Packaging and Print.</p></div>
                     </a>
                     <a href="#" class="slider-item inline-block relative aspect-[3/4] overflow-hidden rounded-lg shadow-xl transform transition-transform duration-300 hover:scale-[1.02]">
-                        <img src="https://placehold.co/400x533/808080/000000?text=Advertising+Campaign" alt="Advertising Campaign" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
+                        <img src="https://scontent-yyz1-1.cdninstagram.com/v/t39.30808-6/467011234_18033346106462277_8299430617094443203_n.jpg?stp=dst-jpg_e35_s1080x1080_sh0.08_tt6&_nc_ht=scontent-yyz1-1.cdninstagram.com&_nc_cat=109&_nc_oc=Q6cZ2QG2_RuwZ_cuivMEVLYB8jOsuQzehcFaeVEzXu8RH9E8mEmV3WclLfyu6sZnpafAxHY&_nc_ohc=-K5J6DB7XbgQ7kNvwHet5XU&_nc_gid=ekLIMfi8Zy_948n0zTlPig&edm=AOQ1c0wAAAAA&ccb=7-5&oh=00_Afet36Soz1JKj2E6XfV1uQ2XCez5fZi0XTsapxH-5Ifb4A&oe=68EC7697&_nc_sid=8b3546" alt="Project 4" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Pulse.</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Digital Campaign Creative.</p></div>
+                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Project 4</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Digital Campaign Creative.</p></div>
                     </a>
 
                     <!-- Set 2 (Duplicate) -->
-                    <a href="#" class="slider-item inline-block relative aspect-[3/4] overflow-hidden rounded-lg shadow-xl transform transition-transform duration-300 hover:scale-[1.02]">
-                        <img src="https://placehold.co/400x533/F3F4F6/1F2937?text=Brand+Refresh" alt="Brand Refresh" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
+                     <a href="#" class="slider-item inline-block relative aspect-[3/4] overflow-hidden rounded-lg shadow-xl transform transition-transform duration-300 hover:scale-[1.02]">
+                        <img src="https://scontent-yyz1-1.cdninstagram.com/v/t39.30808-6/448053683_18016089239462277_1706490523141910716_n.jpg?stp=dst-jpg_e35_s1080x1080_sh0.08_tt6&_nc_ht=scontent-yyz1-1.cdninstagram.com&_nc_cat=109&_nc_oc=Q6cZ2QG2_RuwZ_cuivMEVLYB8jOsuQzehcFaeVEzXu8RH9E8mEmV3WclLfyu6sZnpafAxHY&_nc_ohc=wjKrwVwJEMQQ7kNvwE3E-aL&_nc_gid=ekLIMfi8Zy_948n0zTlPig&edm=AOQ1c0wAAAAA&ccb=7-5&oh=00_AfekU30Joc3Kekm-hHKY1O_rj_TTOoXpuWaes2rgequdEA&oe=68EC7AF5&_nc_sid=8b3546" alt="Project 1" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Project Nova.</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Visual Identity & Strategy.</p></div>
+                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Project 1</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Visual Identity & Strategy.</p></div>
                     </a>
                     <a href="#" class="slider-item inline-block relative aspect-[3/4] overflow-hidden rounded-lg shadow-xl transform transition-transform duration-300 hover:scale-[1.02]">
-                        <img src="https://placehold.co/400x533/000000/ffffff?text=Web+Design" alt="Web Design" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
+                        <img src="https://scontent-yyz1-1.cdninstagram.com/v/t51.29350-15/443818718_1382545049122221_4199523028025648075_n.jpg?stp=dst-jpg_e35_s1080x1080_tt6&_nc_ht=scontent-yyz1-1.cdninstagram.com&_nc_cat=109&_nc_oc=Q6cZ2QG2_RuwZ_cuivMEVLYB8jOsuQzehcFaeVEzXu8RH9E8mEmV3WclLfyu6sZnpafAxHY&_nc_ohc=LDwMU3PD-UIQ7kNvwEdY_gV&_nc_gid=ekLIMfi8Zy_948n0zTlPig&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_AfdxshxffkYEupiNpSnVctG-qQ0BkTe8Dtc6uHfr58KASA&oe=68EC4365&_nc_sid=8b3546" alt="Project 2" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Studio 47.</h3><p class="text-sm text-gray-300 mt-1">UX/UI for a global SaaS platform.</p></div>
+                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Project 2</h3><p class="text-sm text-gray-300 mt-1">UX/UI for a global SaaS platform.</p></div>
                     </a>
                     <a href="#" class="slider-item inline-block relative aspect-[3/4] overflow-hidden rounded-lg shadow-xl transform transition-transform duration-300 hover:scale-[1.02]">
-                        <img src="https://placehold.co/400x533/ffffff/000000?text=Packaging+Design" alt="Packaging Design" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
+                        <img src="https://scontent-yyz1-1.cdninstagram.com/v/t51.29350-15/436293798_1195941888434583_1689967636691776728_n.jpg?stp=dst-jpg_e35_s1080x1080_tt6&_nc_ht=scontent-yyz1-1.cdninstagram.com&_nc_cat=103&_nc_oc=Q6cZ2QG2_RuwZ_cuivMEVLYB8jOsuQzehcFaeVEzXu8RH9E8mEmV3WclLfyu6sZnpafAxHY&_nc_ohc=dQDojFcTiYoQ7kNvwHSlbVs&_nc_gid=ekLIMfi8Zy_948n0zTlPig&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_AfcCyi-ICJTt1fN8vLDdoUMeg_ibcMD_ufaY0ksevYP8uw&oe=68EC4C26&_nc_sid=8b3546" alt="Project 3" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Vector Labs.</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Product Packaging and Print.</p></div>
+                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Project 3</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Product Packaging and Print.</p></div>
                     </a>
                     <a href="#" class="slider-item inline-block relative aspect-[3/4] overflow-hidden rounded-lg shadow-xl transform transition-transform duration-300 hover:scale-[1.02] mr-4">
-                        <img src="https://placehold.co/400x533/808080/000000?text=Advertising+Campaign" alt="Advertising Campaign" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
+                        <img src="https://scontent-yyz1-1.cdninstagram.com/v/t39.30808-6/467011234_18033346106462277_8299430617094443203_n.jpg?stp=dst-jpg_e35_s1080x1080_sh0.08_tt6&_nc_ht=scontent-yyz1-1.cdninstagram.com&_nc_cat=109&_nc_oc=Q6cZ2QG2_RuwZ_cuivMEVLYB8jOsuQzehcFaeVEzXu8RH9E8mEmV3WclLfyu6sZnpafAxHY&_nc_ohc=-K5J6DB7XbgQ7kNvwHet5XU&_nc_gid=ekLIMfi8Zy_948n0zTlPig&edm=AOQ1c0wAAAAA&ccb=7-5&oh=00_Afet36Soz1JKj2E6XfV1uQ2XCez5fZi0XTsapxH-5Ifb4A&oe=68EC7697&_nc_sid=8b3546" alt="Project 4" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Pulse.</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Digital Campaign Creative.</p></div>
+                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Project 4</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Digital Campaign Creative.</p></div>
                     </a>
                 </div>
             </div>
@@ -648,44 +771,54 @@
     </main>
 
     <!-- Chat Page (Initially Hidden) -->
-    <main id="chat-page" class="hidden bg-white w-full overflow-hidden flex flex-col">
+    <main id="chat-page" class="hidden bg-white w-full overflow-hidden flex">
         <div class="flex h-full w-full">
             
             <!-- Sidebar (Chat History) -->
-            <div id="chat-sidebar" class="w-full sm:w-1/3 lg:w-1/4 xl:w-1/5 min-w-[280px] bg-gray-50 border-r border-gray-200 flex flex-col h-full hidden md:flex">
+            <div id="chat-sidebar" class="fixed top-[68px] bottom-0 left-0 h-auto z-40 transform -translate-x-full md:relative md:top-auto md:translate-x-0 transition-all duration-300 ease-in-out bg-gray-50 border-r border-gray-200 flex flex-col w-full sm:w-72">
                 
                 <!-- Sidebar Header/New Chat Button -->
-                <div class="p-4 flex flex-col space-y-4 border-b border-gray-200">
-                    <!-- New Chat Button (Expanded GPT Style) -->
+                <div class="p-4 flex-shrink-0 border-b border-gray-200">
                     <button id="new-chat-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
                         New Chat
                     </button>
                 </div>
                 
                 <!-- Chat History Container -->
-                <div id="chat-history" class="flex-1 overflow-y-auto px-4 py-2 space-y-1">
+                <div id="chat-history" class="flex-1 overflow-y-auto px-4 pt-2">
                     <!-- Chat links dynamically added here by JS -->
                 </div>
                 
                 <!-- Sidebar Footer -->
-                <div class="p-4 border-t border-gray-200 text-sm text-gray-600">
-                    <!-- Updated to show dynamic user status -->
-                    <p id="user-status-text" class="mb-2">Connecting...</p>
+                <div class="p-4 border-t border-gray-200 text-sm text-gray-600 flex-shrink-0">
+                    <p id="user-status-text" class="mb-2 truncate">Connecting...</p>
+                     <div class="flex items-center justify-between">
+                         <button id="back-to-chat-btn" class="flex items-center space-x-2 text-gray-600 hover:text-black md:hidden">
+                            <svg class="w-4 h-4"><use href="#icon-arrow-left"></use></svg>
+                            <span>Back to Chat</span>
+                         </button>
+                    </div>
                 </div>
             </div>
             
             <!-- Main Chat Content Area -->
-            <div class="flex-1 flex flex-col overflow-hidden h-full">
+            <div id="main-chat-area" class="flex-1 flex flex-col overflow-hidden h-full">
                 
-                <!-- Chat Header/Title (MODIFIED: Removed title and resized header) -->
-                <div id="chat-header" class="p-4 border-b border-gray-200 flex items-center bg-white shadow-sm z-10">
+                <!-- Chat Header/Title -->
+                <div id="chat-header" class="p-4 border-b border-gray-200 flex items-center justify-between bg-white shadow-sm z-10 flex-shrink-0">
                     <div class="flex items-center">
-                        <!-- Hamburger button for mobile to show sidebar -->
-                        <button class="md:hidden mr-3 p-2 rounded-full hover:bg-gray-100">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                         <button id="sidebar-toggle-btn" class="p-2 rounded-full hover:bg-gray-100">
+                           <svg class="w-6 h-6 transition-transform"><use href="#icon-sidebar-toggle"></use></svg>
                         </button>
-                        <!-- Title removed -->
+                        <button id="collapsed-new-chat-btn" class="hidden p-2 rounded-full hover:bg-gray-100 ml-2">
+                             <svg class="w-6 h-6"><use href="#icon-plus-square"></use></svg>
+                        </button>
+                    </div>
+                     <div class="flex items-center">
+                        <button id="mobile-new-chat-button" class="md:hidden p-2 rounded-full hover:bg-gray-100">
+                             <svg class="w-6 h-6"><use href="#icon-plus-square"></use></svg>
+                        </button>
                     </div>
                 </div>
                 
@@ -696,12 +829,38 @@
                         Start a new chat or click a session on the left to continue a conversation.
                     </div>
                 </div>
+
+                <div id="file-preview-container" class="hidden p-4 md:px-8 flex justify-center">
+                    <div class="relative bg-gray-100 border border-gray-300 rounded-lg p-3 flex items-center space-x-3 max-w-sm w-full">
+                        <svg class="w-6 h-6 text-gray-500 flex-shrink-0"><use href="#icon-file-text"></use></svg>
+                        <span id="file-preview-name" class="text-sm text-gray-700 truncate"></span>
+                        <button id="remove-file-preview-btn" class="absolute top-0 right-0 -mt-2 -mr-2 bg-red-500 text-white rounded-full p-1 leading-none">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                </div>
                 
                 <!-- Input Area -->
                 <div class="p-4 md:p-8 border-t border-gray-200 flex justify-center flex-shrink-0">
-                    <div class="w-full max-w-3xl flex items-center bg-white border border-gray-300 rounded-2xl shadow-lg overflow-hidden">
-                        <input type="text" id="chat-input" placeholder="Ask a question..." class="flex-1 p-4 text-base border-none focus:ring-0 focus:outline-none placeholder-gray-500 rounded-l-2xl">
-                        <button id="send-button" class="bg-black text-white p-4 hover:bg-gray-800 transition rounded-r-2xl">
+                    <div class="w-full max-w-3xl flex items-center bg-gray-100 rounded-2xl shadow-sm overflow-hidden p-2 space-x-2">
+                        <!-- Analyze Button -->
+                        <button id="analyze-button" title="Analyze File" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 hover:text-black transition">
+                            <svg class="w-6 h-6" stroke="currentColor"><use href="#icon-magic-pen"></use></svg>
+                        </button>
+                         <!-- Plus/File Button for Analysis Mode -->
+                        <button id="plus-file-button" title="Add File for Analysis" class="hidden p-2 rounded-full text-gray-500 hover:bg-gray-200 hover:text-black transition">
+                            <svg class="w-6 h-6"><use href="#icon-plus-square"></use></svg>
+                        </button>
+                        <!-- Image Upload Button -->
+                        <button id="image-upload-button" title="Upload Image" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 hover:text-black transition">
+                            <svg class="w-6 h-6"><use href="#icon-image"></use></svg>
+                        </button>
+                        <!-- Voice Input Button -->
+                        <button id="voice-button" title="Use Voice" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 hover:text-black transition">
+                            <svg class="w-6 h-6"><use href="#icon-mic"></use></svg>
+                        </button>
+                        <input type="text" id="chat-input" placeholder="Ask a question..." class="flex-1 p-2 text-base bg-transparent border-none focus:ring-0 focus:outline-none placeholder-gray-500">
+                        <button id="send-button" class="bg-black text-white p-3 rounded-xl hover:bg-gray-800 transition disabled:opacity-50" disabled>
                             <!-- Send Icon -->
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7" />
@@ -714,101 +873,43 @@
         </div>
     </main>
     <!-- End Chat Page -->
+    <!-- Sidebar Backdrop for Mobile Chat -->
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
 
-    <!-- NEW: Portfolio Page (Initially Hidden) -->
-    <main id="portfolio-page" class="hidden page-transition bg-white w-full overflow-hidden">
-        <!-- Portfolio Hero -->
-        <section class="py-24 md:py-32 text-center bg-gray-50 border-b border-gray-100">
-            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h1 class="text-4xl md:text-5xl font-extrabold tracking-tighter text-black mb-4">
-                    Our Creative Output.
+    <!-- NEW: Image Gen Page -->
+    <main id="image-gen-page" class="hidden page-transition">
+        <section class="py-12 md:py-20">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                 <h1 class="text-4xl md:text-5xl font-extrabold tracking-tighter text-black mb-4">
+                    AI Image Generation
                 </h1>
-                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-                    A curated selection of the projects that define LazerDsgn's dedication to impactful visual strategy and cutting-edge design.
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
+                    Describe the image you want to create. Be as specific as possible for the best results.
                 </p>
-            </div>
-        </section>
 
-        <!-- Portfolio Grid -->
-        <section class="py-20 md:py-28">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <!-- Filter/Category Bar (optional, minimalist) -->
-                <div class="flex flex-wrap justify-center space-x-4 mb-12">
-                    <button class="text-sm font-medium text-black border-b-2 border-black pb-1 transition">All Work</button>
-                    <button class="text-sm font-medium text-gray-500 hover:text-black transition">Branding</button>
-                    <button class="text-sm font-medium text-gray-500 hover:text-black transition">Web Design</button>
-                    <button class="text-sm font-medium text-gray-500 hover:text-black transition">Packaging</button>
+                <div class="max-w-2xl mx-auto">
+                    <div class="flex items-center bg-gray-100 rounded-2xl shadow-sm overflow-hidden p-2 space-x-2">
+                         <input type="text" id="image-prompt-input" placeholder="e.g., A photorealistic astronaut riding a horse on Mars" class="flex-1 p-3 text-base bg-transparent border-none focus:ring-0 focus:outline-none placeholder-gray-500">
+                        <button id="generate-image-btn" class="bg-black text-white p-3 rounded-xl hover:bg-gray-800 transition">
+                            Generate
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Main Grid - Reusing Project Card Styling -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    
-                    <!-- Item 1 -->
-                    <a href="#" class="group relative aspect-[4/5] overflow-hidden rounded-xl shadow-xl hover:shadow-2xl transition duration-300">
-                        <img src="https://placehold.co/800x1000/000000/ffffff?text=E-commerce+UX" alt="Project 1" class="absolute inset-0 w-full h-full object-cover opacity-90 transition-opacity duration-500 group-hover:opacity-100">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                        <div class="absolute bottom-6 left-6 right-6 text-white">
-                            <h4 class="text-xl font-semibold mb-1">Aurora Retail Rebrand</h4>
-                            <p class="text-sm text-gray-300">Brand Identity, Strategy & E-commerce.</p>
+                <div id="image-display-area" class="mt-12 flex justify-center items-center min-h-[300px]">
+                    <div id="image-loading-indicator" class="hidden flex flex-col items-center justify-center">
+                        <div class="w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center animate-pulse">
+                            <svg class="animate-spin h-8 w-8 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
                         </div>
-                    </a>
-
-                    <!-- Item 2 -->
-                    <a href="#" class="group relative aspect-[4/5] overflow-hidden rounded-xl shadow-xl hover:shadow-2xl transition duration-300">
-                        <img src="https://placehold.co/800x1000/F0F0F0/1a1a1a?text=Mobile+App+UI" alt="Project 2" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-90">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                        <div class="absolute bottom-6 left-6 right-6 text-white">
-                            <h4 class="text-xl font-semibold mb-1">Zenith Mobile App</h4>
-                            <p class="text-sm text-gray-300">Interface Design (UI/UX).</p>
-                        </div>
-                    </a>
-
-                    <!-- Item 3 -->
-                    <a href="#" class="group relative aspect-[4/5] overflow-hidden rounded-xl shadow-xl hover:shadow-2xl transition duration-300">
-                        <img src="https://placehold.co/800x1000/D3D3D3/000000?text=Print+Layout" alt="Project 3" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-90">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                        <div class="absolute bottom-6 left-6 right-6 text-white">
-                            <h4 class="text-xl font-semibold mb-1">Terra Annual Report</h4>
-                            <p class="text-sm text-gray-300">Editorial and Print Design.</p>
-                        </div>
-                    </a>
-                    
-                    <!-- Item 4 (Longer Aspect Ratio) -->
-                    <a href="#" class="group relative aspect-[5/4] md:col-span-2 overflow-hidden rounded-xl shadow-xl hover:shadow-2xl transition duration-300">
-                        <img src="https://placehold.co/1200x960/CCCCCC/1a1a1a?text=Campaign+Creative" alt="Project 4" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-90">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                        <div class="absolute bottom-6 left-6 right-6 text-white">
-                            <h4 class="text-xl font-semibold mb-1">Global Campaign Assets</h4>
-                            <p class="text-sm text-gray-300">Digital Marketing & Ad Creative.</p>
-                        </div>
-                    </a>
-
-                    <!-- Item 5 -->
-                     <a href="#" class="group relative aspect-[4/5] overflow-hidden rounded-xl shadow-xl hover:shadow-2xl transition duration-300">
-                        <img src="https://placehold.co/800x1000/1a1a1a/cccccc?text=Logo+Design" alt="Project 5" class="absolute inset-0 w-full h-full object-cover opacity-90 transition-opacity duration-500 group-hover:opacity-100">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                        <div class="absolute bottom-6 left-6 right-6 text-white">
-                            <h4 class="text-xl font-semibold mb-1">Fusion Tech Logo</h4>
-                            <p class="text-sm text-gray-300">Modern Logo Development.</p>
-                        </div>
-                    </a>
-
-                    <!-- Item 6 -->
-                    <a href="#" class="group relative aspect-[4/5] overflow-hidden rounded-xl shadow-xl hover:shadow-2xl transition duration-300">
-                        <img src="https://placehold.co/800x1000/E5E7EB/000000?text=Website+Mockup" alt="Project 6" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-90">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                        <div class="absolute bottom-6 left-6 right-6 text-white">
-                            <h4 class="text-xl font-semibold mb-1">Apex Corp Landing Page</h4>
-                            <p class="text-sm text-gray-300">Conversion-focused Web Design.</p>
-                        </div>
-                    </a>
-                    
+                        <p class="mt-4 text-gray-500">Generating your masterpiece...</p>
+                    </div>
                 </div>
             </div>
         </section>
     </main>
-    <!-- End Portfolio Page -->
-
 
     <!-- 3. Footer (Image 3) -->
     <footer id="footer" class="bg-white border-t border-gray-100 pt-16 pb-8">
@@ -923,9 +1024,12 @@
                     <label for="login-email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                     <input type="email" id="login-email" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-black focus:border-black transition">
                 </div>
-                <div class="mb-6">
+                <div class="mb-6 relative">
                     <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                     <input type="password" id="login-password" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-black focus:border-black transition">
+                     <button type="button" onclick="togglePasswordVisibility('login-password', this)" class="absolute inset-y-0 right-0 top-6 px-3 flex items-center text-gray-500">
+                        <svg class="w-5 h-5"><use href="#icon-eye-off"></use></svg>
+                    </button>
                 </div>
                 <p id="login-error-message" class="text-sm text-red-500 mb-4 hidden">Invalid email or password.</p>
                 <button type="submit" class="w-full py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition">
@@ -934,6 +1038,24 @@
                 <p class="text-center text-sm text-gray-500 mt-4">
                     Don't have an account? <a href="#" class="text-black font-medium hover:underline" onclick="closeModal('login-modal'); openModal('signup-modal', event)">Sign up</a>
                 </p>
+                 <div class="relative my-6">
+                    <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="bg-white px-2 text-gray-500">OR</span>
+                    </div>
+                </div>
+
+                <!-- Google Sign In Button -->
+                <div>
+                    <button type="button" onclick="signInWithGoogle()" class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 48 48">
+                            <path d="M44.5,20.9H24v8.5h11.8C34.7,35.9,30.1,40,24,40c-6.6,0-12-5.4-12-12s5.4-12,12-12c3.6,0,6.8,1.6,9,4.2l6.4-6.4C35.8,5.5,30.3,3,24,3C12.4,3,3,12.4,3,24s9.4,21,21,21c11.2,0,20.2-9.2,20.2-20.5C44.2,22.7,44.5,20.9,44.5,20.9z"></path>
+                        </svg>
+                        <span>Continue with Google</span>
+                    </button>
+                </div>
             </form>
         </div>
     </div>
@@ -955,9 +1077,12 @@
                     <label for="signup-email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                     <input type="email" id="signup-email" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-black focus:border-black transition">
                 </div>
-                <div class="mb-6">
+                <div class="mb-6 relative">
                     <label for="signup-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                     <input type="password" id="signup-password" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-black focus:border-black transition">
+                    <button type="button" onclick="togglePasswordVisibility('signup-password', this)" class="absolute inset-y-0 right-0 top-6 px-3 flex items-center text-gray-500">
+                        <svg class="w-5 h-5"><use href="#icon-eye-off"></use></svg>
+                    </button>
                 </div>
                 <p id="signup-error-message" class="text-sm text-red-500 mb-4 hidden">Error creating account.</p>
                 <button type="submit" class="w-full py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition">
@@ -966,17 +1091,49 @@
                 <p class="text-center text-sm text-gray-500 mt-4">
                     Already have an account? <a href="#" class="text-black font-medium hover:underline" onclick="closeModal('signup-modal'); openModal('login-modal', event)">Log in</a>
                 </p>
+                 <div class="relative my-6">
+                    <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="bg-white px-2 text-gray-500">OR</span>
+                    </div>
+                </div>
+
+                <!-- Google Sign In Button -->
+                <div>
+                    <button type="button" onclick="signInWithGoogle()" class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 48 48">
+                            <path d="M44.5,20.9H24v8.5h11.8C34.7,35.9,30.1,40,24,40c-6.6,0-12-5.4-12-12s5.4-12,12-12c3.6,0,6.8,1.6,9,4.2l6.4-6.4C35.8,5.5,30.3,3,24,3C12.4,3,3,12.4,3,24s9.4,21,21,21c11.2,0,20.2-9.2,20.2-20.5C44.2,22.7,44.5,20.9,44.5,20.9z"></path>
+                        </svg>
+                        <span>Continue with Google</span>
+                    </button>
+                </div>
             </form>
         </div>
     </div>
     
-    <!-- RENAME MODAL REMOVED -->
+    <!-- NEW: DELETE CONFIRMATION MODAL -->
+    <div id="delete-confirm-modal" class="modal-overlay">
+        <div class="modal-content relative">
+            <h3 class="text-2xl font-bold mb-4">Confirm Deletion</h3>
+            <p class="text-gray-600 mb-6">Are you sure you want to permanently delete the session: "<strong id="delete-session-title"></strong>"? This action cannot be undone.</p>
+            <div class="flex justify-end space-x-4">
+                <button class="px-4 py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300 transition" onclick="closeModal('delete-confirm-modal')">
+                    Cancel
+                </button>
+                <button id="confirm-delete-btn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition" onclick="confirmDelete()">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
 
 
     <script type="module">
         // --- FIREBASE IMPORTS (Updated to use standard CDN paths) ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         // MODIFIED: Added getDocs and where for the new chat session validation logic
         import { getFirestore, collection, query, orderBy, addDoc, onSnapshot, serverTimestamp, doc, updateDoc, setLogLevel, getDocs, where, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
@@ -999,877 +1156,1307 @@
         let activeChatUnsubscribe = null;
         let sessionsUnsubscribe = null;
         
-        // --- MODIFICATION: Updated to use User-Provided External Webhook ---
-        const WEBHOOK_URL = 'https://umarworks.app.n8n.cloud/webhook/chatinput'; // User-requested webhook URL
-        // Note: The previous Gemini API URL has been replaced.
+        const HF_API_TOKEN = "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";
+        const WEBHOOK_URL = 'https://umarworks.app.n8n.cloud/webhook/chatinput';
+        const ANALYSIS_WEBHOOK_URL = 'https://umarworks.app.n8n.cloud/webhook/analyze';
 
         const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'default-lazerdsgn-app';
         const CHATS_COLLECTION = `artifacts/${APP_ID}/users/`; // Base path for user-specific data
         const TEMP_TITLE_PREFIX = 'New Chat -'; // Identifier for new sessions
 
-        // --- GLOBAL HTML ELEMENT REFERENCES ---
-        const chatHistoryEl = document.getElementById('chat-history');
-        const chatMessagesEl = document.getElementById('chat-messages');
-        // const currentChatTitleEl = document.getElementById('current-chat-title'); // REMOVED
-        const homePageEl = document.getElementById('homepage-content');
-        const chatPageEl = document.getElementById('chat-page');
-        const footerEl = document.getElementById('footer');
-        const portfolioPageEl = document.getElementById('portfolio-page'); 
-        const defaultMessageEl = document.getElementById('default-message');
-        const authLinkContainer = document.getElementById('auth-link-container');
-        const userStatusText = document.getElementById('user-status-text');
-        const chatInput = document.getElementById('chat-input');
-        const sendButton = document.getElementById('send-button');
-        const newChatButton = document.getElementById('new-chat-btn');
-        
-        // RENAME MODAL ELEMENTS REMOVED
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- GLOBAL HTML ELEMENT REFERENCES ---
+            const chatHistoryEl = document.getElementById('chat-history');
+            const chatMessagesEl = document.getElementById('chat-messages');
+            const homePageEl = document.getElementById('homepage-content');
+            const chatPageEl = document.getElementById('chat-page');
+            const footerEl = document.getElementById('footer');
+            const portfolioPageEl = document.getElementById('portfolio-page'); 
+            const defaultMessageEl = document.getElementById('default-message');
+            const authLinkContainer = document.getElementById('auth-link-container');
+            const userStatusText = document.getElementById('user-status-text');
+            const chatInput = document.getElementById('chat-input');
+            const sendButton = document.getElementById('send-button');
+            const newChatButton = document.getElementById('new-chat-btn');
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const closeMobileMenuButton = document.getElementById('close-mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const mobileAuthLinkContainer = document.getElementById('mobile-auth-link-container');
+            const chatSidebar = document.getElementById('chat-sidebar');
+            const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+            const mobileNewChatButton = document.getElementById('mobile-new-chat-button');
+            const backToChatBtn = document.getElementById('back-to-chat-btn');
+            const deleteSessionTitleEl = document.getElementById('delete-session-title');
+            const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+            const imageUploadButton = document.getElementById('image-upload-button');
+            const voiceButton = document.getElementById('voice-button');
+            const imageInput = document.getElementById('image-input');
+            const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+            const collapsedNewChatBtn = document.getElementById('collapsed-new-chat-btn');
+            const imageGenPage = document.getElementById('image-gen-page');
+            const generateImageBtn = document.getElementById('generate-image-btn');
+            const imagePromptInput = document.getElementById('image-prompt-input');
+            const imageDisplayArea = document.getElementById('image-display-area');
+            const imageLoadingIndicator = document.getElementById('image-loading-indicator');
+            const analyzeButton = document.getElementById('analyze-button');
+            const analysisFileInput = document.getElementById('analysis-file-input');
+            const plusFileButton = document.getElementById('plus-file-button');
+            const filePreviewContainer = document.getElementById('file-preview-container');
+            const filePreviewName = document.getElementById('file-preview-name');
+            const removeFilePreviewBtn = document.getElementById('remove-file-preview-btn');
+            let pendingImages = [];
+            let isAnalysisMode = false;
+            let pendingAnalysisFile = null;
+            let analysisFileSent = false;
 
+            const mainContentPages = {
+                'home': homePageEl,
+                'chat': chatPageEl,
+                'portfolio': portfolioPageEl,
+                'image-gen': imageGenPage
+            };
 
-        const mainContentPages = {
-            'home': homePageEl,
-            'chat': chatPageEl,
-            'portfolio': portfolioPageEl
-        };
-        
-        // --- UTILITY FUNCTIONS ---
-        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-        
-        /**
-         * Copies text to the clipboard, using document.execCommand('copy') which is
-         * more reliable in sandboxed environments (iframes).
-         * @param {string} text The text content to copy.
-         * @param {HTMLElement} btnEl The button element to briefly show success feedback on.
-         */
-        window.copyToClipboard = function(text, btnEl) {
-            const originalHtml = btnEl.innerHTML;
-            let success = false;
+            // --- UTILITY FUNCTIONS ---
+            const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
             
-            // 1. Create a temporary textarea element
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            // Move off-screen to avoid showing it to the user
-            textarea.style.position = 'fixed'; 
-            textarea.style.top = '0';
-            textarea.style.left = '0';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            
-            // 2. Select the text and execute the copy command
-            textarea.focus();
-            textarea.select();
-            
-            try {
-                success = document.execCommand('copy');
-                if (success) {
-                    showSuccess();
-                } else {
-                    console.error('Copy command failed.');
-                }
-            } catch (err) {
-                console.error('Copy failed using execCommand:', err);
-            }
-            
-            // 3. Clean up the temporary element
-            document.body.removeChild(textarea);
+            async function createThumbnail(dataUrl) {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 400;
+                        const MAX_HEIGHT = 300;
+                        let width = img.width;
+                        let height = img.height;
 
-            function showSuccess() {
-                // Show a brief success checkmark
-                btnEl.innerHTML = `<svg class="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`;
-                setTimeout(() => {
-                    btnEl.innerHTML = originalHtml;
-                }, 1500);
-            }
-        };
-
-
-        // --- FIREBASE INITIALIZATION & AUTH STATE LISTENER ---
-        function initializeFirebase() {
-            try {
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                
-                // Listen for authentication state changes
-                onAuthStateChanged(auth, handleAuthChange);
-                
-            } catch (error) {
-                console.error("Firebase initialization error:", error);
-                userStatusText.textContent = "Error: Firebase not initialized.";
-            }
-        }
-
-        async function handleAuthChange(user) { // Made async to allow firestore call
-            // Unsubscribe from old listeners if they exist
-            if (sessionsUnsubscribe) sessionsUnsubscribe();
-            if (activeChatUnsubscribe) activeChatUnsubscribe();
-
-            if (user) {
-                // User is signed in.
-                userId = user.uid;
-                userStatusText.textContent = `Logged in as: ${user.email}`;
-                
-                // Update header: show Logout button
-                authLinkContainer.innerHTML = `
-                    <a href="#" class="font-medium text-black border border-gray-300 rounded-full px-4 py-1.5 hover:bg-gray-50 transition" onclick="logoutUser(event)">Logout</a>
-                `;
-
-                // Enable chat and start listening for sessions
-                sendButton.disabled = false;
-                chatInput.disabled = false;
-                newChatButton.disabled = false;
-                
-                if (userId) {
-                    listenForChatSessions();
-                    
-                    // --- LOGIC FOR LOADING/CREATING DEFAULT SESSION ---
-                    // Wait for sessions to populate
-                    await new Promise(resolve => setTimeout(resolve, 500)); 
-
-                    const visibleSessions = chatSessionsData.filter(s => !s.title.startsWith(TEMP_TITLE_PREFIX));
-                    const tempSessions = chatSessionsData.filter(s => s.title.startsWith(TEMP_TITLE_PREFIX));
-                    
-                    if (chatSessionsData.length === 0 || tempSessions.length === 0) {
-                        // If no sessions OR no *temporary* sessions exist, create the initial default.
-                        console.log("No default temp session found. Creating initial default.");
-                        await createInitialDefaultSession();
-                    } else if (!currentChatId) {
-                        // If no chat is loaded, load the most recent available session (visible or temp)
-                        window.loadChatSession(chatSessionsData[0].id);
-                    }
-                    // --- END LOGIC FOR DEFAULT SESSION ---
-
-                } else {
-                    console.error("Authentication completed, but UID is missing. Cannot start chat listeners.");
-                }
-                
-            } else {
-                // User is signed out.
-                userId = null;
-                userStatusText.textContent = "Please Login or Signup.";
-                
-                // Update header: show Login button
-                authLinkContainer.innerHTML = `
-                    <a href="#" class="font-medium text-black border border-gray-300 rounded-full px-4 py-1.5 hover:bg-gray-50 transition" onclick="openModal('login-modal', event)">Login</a>
-                `;
-                
-                // Clear chat history and disable input
-                chatHistoryEl.innerHTML = '';
-                chatMessagesEl.innerHTML = '';
-                currentChatId = null; // Ensure ID is reset on logout
-                // Check if defaultMessageEl exists before trying to access its classList
-                if (defaultMessageEl) defaultMessageEl.classList.remove('hidden');
-                sendButton.disabled = true;
-                chatInput.disabled = true;
-                newChatButton.disabled = true;
-                
-                // Navigate back to home if user was on chat page
-                if (!chatPageEl.classList.contains('hidden')) {
-                    navigateTo('home');
-                }
-            }
-        }
-
-        async function createInitialDefaultSession() {
-            if (!userId) return;
-
-            const sessionsRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions`);
-            // Set the identifiable temporary title
-            const tempTitle = `${TEMP_TITLE_PREFIX} ${new Date().toLocaleDateString()}`;
-            
-            try {
-                // 1. Create a new session document with the temporary title
-                const newSessionRef = await addDoc(sessionsRef, {
-                    title: tempTitle,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp()
-                });
-                console.log("Initial default session created:", newSessionRef.id);
-                // Immediately load the newly created session
-                window.loadChatSession(newSessionRef.id);
-
-            } catch (error) {
-                console.error("Error creating initial default chat session:", error);
-            }
-        }
-        
-        // --- AUTHENTICATION FUNCTIONS (Made global for inline access) ---
-        window.loginUser = async function(event) {
-            event.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            const errorEl = document.getElementById('login-error-message');
-            errorEl.classList.add('hidden');
-            
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                window.closeModal('login-modal');
-            } catch (error) {
-                console.error("Login Error:", error.code, error.message);
-                errorEl.textContent = "Invalid email or password.";
-                errorEl.classList.remove('hidden');
-            }
-        }
-        
-        window.signupUser = async function(event) {
-            event.preventDefault();
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-            const errorEl = document.getElementById('signup-error-message');
-            errorEl.classList.add('hidden');
-
-            try {
-                await createUserWithEmailAndPassword(auth, email, password);
-                window.closeModal('signup-modal');
-            } catch (error) {
-                console.error("Sign Up Error:", error.code, error.message);
-                errorEl.textContent = error.message.replace('Firebase:', '');
-                errorEl.classList.remove('hidden');
-            }
-        }
-        
-        window.logoutUser = function(event) {
-            if (event) event.preventDefault();
-            signOut(auth).catch((error) => console.error("Logout Error:", error));
-        }
-
-
-        // --- CHAT/FIRESTORE LOGIC ---
-        
-        let currentChatId = null;
-        let chatSessionsData = []; // To store chat metadata (id, title)
-        
-        function listenForChatSessions() {
-            if (!userId) {
-                console.error("listenForChatSessions called without valid userId.");
-                return;
-            }
-            const sessionsRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions`);
-            
-            // MODIFIED: Sort by isPinned (descending) first, then by updatedAt (descending)
-            const sessionsQuery = query(sessionsRef, orderBy('updatedAt', 'desc')); 
-
-            // Unsubscribe from previous listener if active
-            if (sessionsUnsubscribe) sessionsUnsubscribe();
-
-            sessionsUnsubscribe = onSnapshot(sessionsQuery, (snapshot) => {
-                chatSessionsData = [];
-                snapshot.forEach(doc => {
-                    chatSessionsData.push({ id: doc.id, ...doc.data() });
-                });
-                renderSidebar();
-                
-            }, (error) => {
-                console.error("Error fetching chat sessions:", error); 
-                chatHistoryEl.innerHTML = `<p class="text-red-500 text-sm p-4">Error loading sessions. Check console for permissions error!</p>`;
-            });
-        }
-        
-        function renderSidebar() {
-            if (!chatHistoryEl) return;
-            chatHistoryEl.innerHTML = ''; 
-            
-            // MODIFICATION: Filter sessions to hide those that still have the temporary title.
-            chatSessionsData
-                .filter(session => !session.title.startsWith(TEMP_TITLE_PREFIX))
-                .forEach(session => {
-                const isActive = session.id === currentChatId;
-                
-                // Create the container element (Clickable area)
-                const containerDiv = document.createElement('div');
-                containerDiv.className = `session-item-container ${
-                    isActive ? 'active' : ''
-                }`;
-                containerDiv.setAttribute('data-session-id', session.id);
-                // Attach the primary click handler for loading the chat
-                containerDiv.onclick = () => window.loadChatSession(session.id);
-                
-                // Session Text (NOW EDITABLE)
-                const textSpan = document.createElement('span');
-                textSpan.className = 'session-text text-sm';
-                textSpan.textContent = session.title;
-                textSpan.contentEditable = "true";
-                textSpan.setAttribute('data-original-title', session.title); 
-                textSpan.setAttribute('data-session-id', session.id);
-
-                // Stop click from propagating to the parent div (which loads the session)
-                textSpan.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                });
-
-                // Save on blur
-                textSpan.addEventListener('blur', (e) => {
-                    const newTitle = e.target.textContent.trim();
-                    const sessionId = e.target.getAttribute('data-session-id');
-                    const originalTitle = e.target.getAttribute('data-original-title');
-
-                    if (newTitle && newTitle !== originalTitle) {
-                        window.saveSessionTitle(sessionId, newTitle);
-                    } else {
-                        // If title is empty or unchanged, revert to original
-                        e.target.textContent = originalTitle;
-                    }
-                });
-
-                // Save on Enter, prevent new line
-                textSpan.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault(); 
-                        e.target.blur(); // Triggers the blur event to save
-                    }
-                });
-
-                // --- 3-Dot Actions Menu (Hidden by default) ---
-                const actionsMenu = document.createElement('div');
-                actionsMenu.className = 'session-actions-menu';
-                actionsMenu.onclick = (e) => e.stopPropagation(); // Prevent loading chat when clicking menu
-                
-                // 1. Rename Button
-                const renameBtn = document.createElement('button');
-                renameBtn.setAttribute('title', 'Rename');
-                renameBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-rename"></use></svg>`;
-                renameBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    textSpan.focus();
-                };
-
-                // 2. Delete Button
-                const deleteBtn = document.createElement('button');
-                deleteBtn.setAttribute('title', 'Delete');
-                deleteBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-trash"></use></svg>`;
-                deleteBtn.onclick = (e) => { e.stopPropagation(); window.promptDelete(session.id, session.title); };
-
-                actionsMenu.appendChild(renameBtn);
-                actionsMenu.appendChild(deleteBtn);
-
-                containerDiv.appendChild(textSpan);
-                containerDiv.appendChild(actionsMenu);
-                chatHistoryEl.appendChild(containerDiv);
-            });
-        }
-        
-        // --- NEW: SESSION ACTION HANDLERS ---
-
-        window.saveSessionTitle = async function(sessionId, newTitle) {
-             if (!userId) return;
-            try {
-                const sessionDocRef = doc(db, `${CHATS_COLLECTION}${userId}/sessions`, sessionId);
-                await updateDoc(sessionDocRef, { 
-                    title: newTitle,
-                    updatedAt: serverTimestamp()
-                });
-                showAlert(`Session renamed.`);
-            } catch (error) {
-                console.error("Error renaming session:", error);
-                showAlert("Failed to rename session.");
-                // Revert UI change on failure
-                const el = chatHistoryEl.querySelector(`[data-session-id="${sessionId}"] .session-text`);
-                if (el) {
-                    el.textContent = el.getAttribute('data-original-title');
-                }
-            }
-        }
-        
-        // MODIFIED: Replaced window.confirm with custom modal/toast logic
-        window.promptDelete = function(sessionId, title) {
-            // Assuming the icon click implies confirmation due to browser restrictions
-            window.deleteChatSession(sessionId);
-            showAlert(`Deleting session: ${title}`);
-        }
-
-        window.deleteChatSession = async function(sessionId) {
-            try {
-                const sessionDocRef = doc(db, `${CHATS_COLLECTION}${userId}/sessions`, sessionId);
-                await deleteDoc(sessionDocRef);
-                
-                // If the deleted session was the active one, clear currentChatId and load default state
-                if (sessionId === currentChatId) {
-                    currentChatId = null;
-                    if (activeChatUnsubscribe) activeChatUnsubscribe();
-                    chatMessagesEl.innerHTML = '';
-                    if (defaultMessageEl) defaultMessageEl.classList.remove('hidden');
-                    
-                    // After deletion, ensure a new default session is available if no others are left
-                    const visibleSessions = chatSessionsData.filter(s => !s.title.startsWith(TEMP_TITLE_PREFIX) && s.id !== sessionId);
-                    if (visibleSessions.length === 0) {
-                        await createInitialDefaultSession();
-                    }
-                }
-
-                showAlert(`Session deleted.`);
-            } catch (error) {
-                console.error("Error deleting session:", error);
-                showAlert("Failed to delete session.");
-            }
-        }
-
-        // --- END NEW: SESSION ACTION HANDLERS ---
-
-
-        window.loadChatSession = function(sessionId) {
-            if (!userId) {
-                console.error("Cannot load chat: User not authenticated.");
-                return;
-            }
-            
-            // Unsubscribe from previous message listener if active
-            if (activeChatUnsubscribe) activeChatUnsubscribe();
-
-            currentChatId = sessionId;
-            renderSidebar(); // Update active highlight
-
-            const session = chatSessionsData.find(s => s.id === sessionId);
-            // Use the title from the data if available, otherwise show a default
-            const title = session ? session.title : 'Chat Session'; 
-            
-            // Update the document title/meta title instead of the chat header title
-            document.title = `${title} | LazerDsgn Chat`;
-            
-            if (!chatMessagesEl) return; 
-            
-            const messagesRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions/${sessionId}/messages`);
-            const messagesQuery = query(messagesRef, orderBy('createdAt', 'asc'));
-
-            activeChatUnsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-                // --- MODIFICATION: Updated rendering logic to include action icons and new styling ---
-                chatMessagesEl.innerHTML = ''; // Clear existing messages before redrawing
-                
-                if (snapshot.empty) {
-                    // MODIFIED: If empty, show default message prompt
-                    if (defaultMessageEl) defaultMessageEl.classList.remove('hidden');
-                } else {
-                     if (defaultMessageEl) defaultMessageEl.classList.add('hidden');
-                    snapshot.forEach(doc => {
-                        const msg = doc.data();
-                        
-                        // Outer container for message structure and flex alignment
-                        const msgContainer = document.createElement('div');
-                        // MODIFIED: Added items-end to user container for right alignment
-                        msgContainer.className = `chat-message-container max-w-2xl font-normal w-full ${
-                            msg.role === 'user' ? 'self-end flex flex-col items-end' : 'self-start flex flex-col items-start'
-                        }`;
-                        
-                        // Inner text bubble/container
-                        const textEl = document.createElement('div');
-                        textEl.className = `chat-message-text text-base ${
-                            msg.role === 'user' ? 'self-end' : 'self-start'
-                        }`;
-                        // Add fade-in class for AI messages only
-                        if (msg.role === 'ai') {
-                             textEl.classList.add('ai-text-content');
-                        }
-                        textEl.textContent = msg.text; 
-                        
-                        // Action buttons row
-                        const actionsEl = document.createElement('div');
-                        actionsEl.className = 'chat-actions';
-                        
-                        // 1. Copy Button (for both user and AI)
-                        const copyBtn = document.createElement('button');
-                        copyBtn.className = 'action-button copy';
-                        copyBtn.setAttribute('title', 'Copy text');
-                        copyBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-copy"></use></svg>`;
-                        copyBtn.onclick = (e) => window.copyToClipboard(msg.text, copyBtn);
-                        
-                        // Append text to container
-                        msgContainer.appendChild(textEl);
-
-                        if (msg.role === 'user') {
-                            // User messages: Actions aligned to the right (end)
-                            actionsEl.classList.add('user');
-                            actionsEl.appendChild(copyBtn);
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
                         } else {
-                            // AI messages: Actions aligned to the left (start)
-                            actionsEl.classList.add('ai');
-                            
-                            // 2. Good Response
-                            const goodBtn = document.createElement('button');
-                            goodBtn.className = 'action-button feedback';
-                            goodBtn.setAttribute('title', 'Good Response');
-                            goodBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-thumb-up"></use></svg>`;
-                            // 3. Bad Response (using 'close' icon)
-                            const badBtn = document.createElement('button');
-                            badBtn.className = 'action-button feedback';
-                            badBtn.setAttribute('title', 'Bad Response');
-                            badBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-close"></use></svg>`;
-                            
-                            actionsEl.appendChild(goodBtn);
-                            actionsEl.appendChild(badBtn);
-                            actionsEl.appendChild(copyBtn);
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
                         }
-
-                        msgContainer.appendChild(actionsEl);
-                        chatMessagesEl.appendChild(msgContainer);
-                    });
-                }
-                
-                // Maintain scroll position after update
-                chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
-
-            }, (error) => {
-                 console.error("Error fetching messages:", error);
-                 chatMessagesEl.innerHTML = `<p class="text-red-500 text-sm p-4 text-center">Error loading messages. Please check console.</p>`;
-            });
-        }
-        
-        window.createNewChatSession = async function() {
-            if (!userId) {
-                // Using a custom modal instead of alert
-                openModal('login-modal', null);
-                return;
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.7)); // Compress to JPEG
+                    };
+                    img.onerror = reject;
+                    img.src = dataUrl;
+                });
             }
-            
-            // --- CHECK: ENSURE CURRENT SESSION HAS USER MESSAGES BEFORE CREATING A NEW ONE ---
-            if (currentChatId) {
-                const messagesRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions/${currentChatId}/messages`);
-                // Query for any message with role 'user'
-                const userMessagesQuery = query(messagesRef, where("role", "==", "user"));
+
+            function compressImage(file, targetSizeInBytes = 2 * 1024 * 1024) {
+                 return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = event => {
+                        const img = new Image();
+                        img.src = event.target.result;
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            ctx.drawImage(img, 0, 0);
+
+                            let quality = 0.9;
+                            
+                            const tryCompression = () => {
+                                canvas.toBlob(blob => {
+                                    if (blob.size <= targetSizeInBytes || quality <= 0.1) {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => resolve(reader.result);
+                                        reader.onerror = reject;
+                                        reader.readAsDataURL(blob);
+                                    } else {
+                                        quality -= 0.1;
+                                        tryCompression();
+                                    }
+                                }, 'image/jpeg', quality);
+                            };
+                            tryCompression();
+                        };
+                        img.onerror = reject;
+                    };
+                    reader.onerror = reject;
+                });
+            }
+
+            window.copyToClipboard = function(text, btnEl) {
+                const originalHtml = btnEl.innerHTML;
+                let success = false;
+                
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed'; 
+                textarea.style.top = '0';
+                textarea.style.left = '0';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                
+                textarea.focus();
+                textarea.select();
                 
                 try {
-                    // Check if any user messages exist in the currently loaded chat
-                    const snapshot = await getDocs(userMessagesQuery);
+                    success = document.execCommand('copy');
+                    if (success) {
+                        showSuccess();
+                    } else {
+                        console.error('Copy command failed.');
+                    }
+                } catch (err) {
+                    console.error('Copy failed using execCommand:', err);
+                }
+                
+                document.body.removeChild(textarea);
+
+                function showSuccess() {
+                    btnEl.innerHTML = `<svg class="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`;
+                    setTimeout(() => {
+                        btnEl.innerHTML = originalHtml;
+                    }, 1500);
+                }
+            };
+
+            window.togglePasswordVisibility = function(inputId, buttonEl) {
+                const input = document.getElementById(inputId);
+                const iconUse = buttonEl.querySelector('svg use');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    iconUse.setAttribute('href', '#icon-eye');
+                } else {
+                    input.type = 'password';
+                    iconUse.setAttribute('href', '#icon-eye-off');
+                }
+            }
+
+            // --- FIREBASE INITIALIZATION & AUTH STATE LISTENER ---
+            function initializeFirebase() {
+                try {
+                    app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    
+                    onAuthStateChanged(auth, handleAuthChange);
+                    
+                } catch (error) {
+                    console.error("Firebase initialization error:", error);
+                    userStatusText.textContent = "Error: Firebase not initialized.";
+                }
+            }
+
+            async function handleAuthChange(user) {
+                if (sessionsUnsubscribe) sessionsUnsubscribe();
+                if (activeChatUnsubscribe) activeChatUnsubscribe();
+
+                if (user) {
+                    userId = user.uid;
+                    userStatusText.textContent = `Logged in as: ${user.email}`;
+                    
+                    authLinkContainer.innerHTML = `
+                        <a href="#" class="font-medium text-black border border-gray-300 rounded-full px-4 py-1.5 hover:bg-gray-50 transition" onclick="logoutUser(event)">Logout</a>
+                    `;
+                    mobileAuthLinkContainer.innerHTML = `
+                        <a href="#" class="font-medium text-black border border-gray-300 rounded-full px-5 py-2 hover:bg-gray-50 transition" onclick="logoutUser(event); closeMobileMenu();">Logout</a>
+                    `;
+
+                    sendButton.disabled = chatInput.value.trim() === '';
+                    chatInput.disabled = false;
+                    newChatButton.disabled = false;
+                    
+                    if (userId) {
+                        listenForChatSessions();
+                        
+                        await new Promise(resolve => setTimeout(resolve, 500)); 
+
+                        const visibleSessions = chatSessionsData.filter(s => !s.title.startsWith(TEMP_TITLE_PREFIX));
+                        const tempSessions = chatSessionsData.filter(s => s.title.startsWith(TEMP_TITLE_PREFIX));
+                        
+                        if (chatSessionsData.length === 0 || tempSessions.length === 0) {
+                            console.log("No default temp session found. Creating initial default.");
+                            await createInitialDefaultSession();
+                        } else if (!currentChatId) {
+                            window.loadChatSession(chatSessionsData[0].id);
+                        }
+
+                    } else {
+                        console.error("Authentication completed, but UID is missing. Cannot start chat listeners.");
+                    }
+                    
+                } else {
+                    userId = null;
+                    userStatusText.textContent = "Please Login or Signup.";
+                    
+                    authLinkContainer.innerHTML = `
+                        <a href="#" class="font-medium text-black border border-gray-300 rounded-full px-4 py-1.5 hover:bg-gray-50 transition" onclick="openModal('login-modal', event)">Login</a>
+                    `;
+                    mobileAuthLinkContainer.innerHTML = `
+                        <a href="#" class="font-medium text-black border border-gray-300 rounded-full px-5 py-2 hover:bg-gray-50 transition" onclick="openModal('login-modal', event); closeMobileMenu();">Login</a>
+                    `;
+                    
+                    chatHistoryEl.innerHTML = '';
+                    chatMessagesEl.innerHTML = '';
+                    currentChatId = null;
+                    if (defaultMessageEl) defaultMessageEl.classList.remove('hidden');
+                    sendButton.disabled = true;
+                    chatInput.disabled = true;
+                    newChatButton.disabled = true;
+                    
+                    if (!chatPageEl.classList.contains('hidden')) {
+                        navigateTo('home');
+                    }
+                }
+            }
+
+            async function createInitialDefaultSession() {
+                if (!userId) return;
+
+                const sessionsRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions`);
+                const tempTitle = `${TEMP_TITLE_PREFIX} ${new Date().toLocaleDateString()}`;
+                
+                try {
+                    const newSessionRef = await addDoc(sessionsRef, {
+                        title: tempTitle,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+                    console.log("Initial default session created:", newSessionRef.id);
+                    window.loadChatSession(newSessionRef.id);
+
+                } catch (error) {
+                    console.error("Error creating initial default chat session:", error);
+                }
+            }
+            
+            window.loginUser = async function(event) {
+                event.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                const errorEl = document.getElementById('login-error-message');
+                errorEl.classList.add('hidden');
+                
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    window.closeModal('login-modal');
+                } catch (error) {
+                    console.error("Login Error:", error.code, error.message);
+                    errorEl.textContent = "Invalid email or password.";
+                    errorEl.classList.remove('hidden');
+                }
+            }
+            
+            window.signupUser = async function(event) {
+                event.preventDefault();
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                const errorEl = document.getElementById('signup-error-message');
+                errorEl.classList.add('hidden');
+
+                try {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    window.closeModal('signup-modal');
+                } catch (error) {
+                    console.error("Sign Up Error:", error.code, error.message);
+                    errorEl.textContent = error.message.replace('Firebase:', '');
+                    errorEl.classList.remove('hidden');
+                }
+            }
+            
+            window.signInWithGoogle = async function() {
+                const provider = new GoogleAuthProvider();
+                try {
+                    await signInWithPopup(auth, provider);
+                    // The onAuthStateChanged listener will handle the successful login.
+                    closeModal('login-modal');
+                    closeModal('signup-modal');
+                } catch (error) {
+                    console.error("Google Sign-In Error:", error);
+                    if (error.code !== 'auth/cancelled-popup-request' && error.code !== 'auth/popup-closed-by-user') {
+                         showAlert("Failed to sign in with Google. Please try again.");
+                    }
+                }
+            }
+
+            window.logoutUser = function(event) {
+                if (event) event.preventDefault();
+                signOut(auth).catch((error) => console.error("Logout Error:", error));
+            }
+
+
+            // --- CHAT/FIRESTORE LOGIC ---
+            
+            let currentChatId = null;
+            let chatSessionsData = [];
+            
+            function listenForChatSessions() {
+                if (!userId) {
+                    console.error("listenForChatSessions called without valid userId.");
+                    return;
+                }
+                const sessionsRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions`);
+                const sessionsQuery = query(sessionsRef, orderBy('updatedAt', 'desc')); 
+
+                if (sessionsUnsubscribe) sessionsUnsubscribe();
+
+                sessionsUnsubscribe = onSnapshot(sessionsQuery, (snapshot) => {
+                    chatSessionsData = [];
+                    snapshot.forEach(doc => {
+                        chatSessionsData.push({ id: doc.id, ...doc.data() });
+                    });
+                    renderSidebar();
+                    
+                }, (error) => {
+                    console.error("Error fetching chat sessions:", error); 
+                    chatHistoryEl.innerHTML = `<p class="text-red-500 text-sm p-4">Error loading sessions. Check console for permissions error!</p>`;
+                });
+            }
+            
+            function renderSidebar() {
+                if (!chatHistoryEl) return;
+                chatHistoryEl.innerHTML = ''; 
+                
+                chatSessionsData
+                    .filter(session => !session.title.startsWith(TEMP_TITLE_PREFIX))
+                    .forEach(session => {
+                    const isActive = session.id === currentChatId;
+                    
+                    const containerDiv = document.createElement('div');
+                    containerDiv.className = `session-item-container ${isActive ? 'active' : ''}`;
+                    containerDiv.setAttribute('data-session-id', session.id);
+                    containerDiv.onclick = () => {
+                        window.loadChatSession(session.id);
+                        closeChatSidebar(); // Close sidebar on mobile after selection
+                    };
+                    
+                    const textWrapper = document.createElement('div');
+                    textWrapper.className = 'flex-grow min-w-0';
+
+                    const textSpan = document.createElement('span');
+                    textSpan.className = 'session-text text-sm block'; // block to allow time to be on next line
+                    textSpan.textContent = session.title;
+                    textSpan.contentEditable = "false";
+                    textSpan.setAttribute('data-original-title', session.title); 
+                    textSpan.setAttribute('data-session-id', session.id);
+
+                    textSpan.addEventListener('blur', (e) => {
+                        e.target.contentEditable = "false";
+                        const newTitle = e.target.textContent.trim();
+                        const sessionId = e.target.getAttribute('data-session-id');
+                        const originalTitle = e.target.getAttribute('data-original-title');
+
+                        if (newTitle && newTitle !== originalTitle) {
+                            window.saveSessionTitle(sessionId, newTitle);
+                        } else {
+                            e.target.textContent = originalTitle;
+                        }
+                    });
+
+                    textSpan.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault(); 
+                            e.target.blur();
+                        }
+                    });
+
+                    textWrapper.appendChild(textSpan);
+                    
+                    if (session.createdAt) {
+                        const timeSpan = document.createElement('span');
+                        timeSpan.className = 'text-xs text-gray-400 block px-1.5';
+                        timeSpan.textContent = session.createdAt.toDate().toLocaleDateString('en-US', {
+                            month: 'short', day: 'numeric', year: 'numeric'
+                        });
+                        textWrapper.appendChild(timeSpan);
+                    }
+
+                    const actionsMenu = document.createElement('div');
+                    actionsMenu.className = 'session-actions-menu';
+                    actionsMenu.onclick = (e) => e.stopPropagation();
+                    
+                    const renameBtn = document.createElement('button');
+                    renameBtn.setAttribute('title', 'Rename');
+                    renameBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-rename"></use></svg>`;
+                    renameBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        textSpan.contentEditable = "true";
+                        textSpan.focus();
+                        const range = document.createRange();
+                        range.selectNodeContents(textSpan);
+                        const sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                    };
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.setAttribute('title', 'Delete');
+                    deleteBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-trash"></use></svg>`;
+                    deleteBtn.onclick = (e) => { e.stopPropagation(); window.promptDelete(session.id, session.title); };
+
+                    actionsMenu.appendChild(renameBtn);
+                    actionsMenu.appendChild(deleteBtn);
+
+                    containerDiv.appendChild(textWrapper);
+                    containerDiv.appendChild(actionsMenu);
+                    chatHistoryEl.appendChild(containerDiv);
+                });
+            }
+            
+            window.saveSessionTitle = async function(sessionId, newTitle) {
+                 if (!userId) return;
+                try {
+                    const sessionDocRef = doc(db, `${CHATS_COLLECTION}${userId}/sessions`, sessionId);
+                    await updateDoc(sessionDocRef, { 
+                        title: newTitle,
+                        updatedAt: serverTimestamp()
+                    });
+                    showAlert(`Session renamed.`);
+                } catch (error) {
+                    console.error("Error renaming session:", error);
+                    showAlert("Failed to rename session.");
+                    const el = chatHistoryEl.querySelector(`[data-session-id="${sessionId}"] .session-text`);
+                    if (el) {
+                        el.textContent = el.getAttribute('data-original-title');
+                    }
+                }
+            }
+            
+            window.promptDelete = function(sessionId, title) {
+                deleteSessionTitleEl.textContent = title;
+                confirmDeleteBtn.setAttribute('data-session-id', sessionId);
+                openModal('delete-confirm-modal');
+            }
+
+            window.confirmDelete = function() {
+                const sessionId = confirmDeleteBtn.getAttribute('data-session-id');
+                if(sessionId) {
+                    window.deleteChatSession(sessionId);
+                }
+                closeModal('delete-confirm-modal');
+            }
+
+            window.deleteChatSession = async function(sessionId) {
+                try {
+                    const sessionDocRef = doc(db, `${CHATS_COLLECTION}${userId}/sessions`, sessionId);
+                    await deleteDoc(sessionDocRef);
+                    
+                    if (sessionId === currentChatId) {
+                        currentChatId = null;
+                        if (activeChatUnsubscribe) activeChatUnsubscribe();
+                        chatMessagesEl.innerHTML = '';
+                        if (defaultMessageEl) defaultMessageEl.classList.remove('hidden');
+                        
+                        const visibleSessions = chatSessionsData.filter(s => !s.title.startsWith(TEMP_TITLE_PREFIX) && s.id !== sessionId);
+                        if (visibleSessions.length === 0) {
+                            await createInitialDefaultSession();
+                        }
+                    }
+
+                    showAlert(`Session deleted.`);
+                } catch (error) {
+                    console.error("Error deleting session:", error);
+                    showAlert("Failed to delete session.");
+                }
+            }
+
+            window.loadChatSession = function(sessionId) {
+                if (!userId) {
+                    console.error("Cannot load chat: User not authenticated.");
+                    return;
+                }
+                
+                if (activeChatUnsubscribe) activeChatUnsubscribe();
+
+                currentChatId = sessionId;
+                renderSidebar();
+
+                const session = chatSessionsData.find(s => s.id === sessionId);
+                const title = session ? session.title : 'Chat Session'; 
+                
+                document.title = `${title} | LazerDsgn Chat`;
+                
+                if (!chatMessagesEl) return; 
+                
+                const messagesRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions/${sessionId}/messages`);
+                const messagesQuery = query(messagesRef, orderBy('createdAt', 'asc'));
+
+                activeChatUnsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+                    chatMessagesEl.innerHTML = '';
                     
                     if (snapshot.empty) {
-                        // If the current chat has no user messages, block creation and reuse the current session.
-                        showAlert("Please send at least one message in the current chat before starting a new session.");
+                        if (defaultMessageEl) defaultMessageEl.classList.remove('hidden');
+                    } else {
+                         if (defaultMessageEl) defaultMessageEl.classList.add('hidden');
+                        snapshot.forEach(doc => {
+                            const msg = doc.data();
+                            
+                            const msgContainer = document.createElement('div');
+                            msgContainer.className = `chat-message-container max-w-2xl font-normal w-full ${
+                                msg.role === 'user' ? 'self-end flex flex-col items-end' : 'self-start flex flex-col items-start'
+                            }`;
+                            
+                            const textEl = document.createElement('div');
+                            textEl.className = `chat-message-text text-base ${
+                                msg.role === 'user' ? 'self-end' : 'self-start'
+                            }`;
+                            if (msg.role === 'ai') {
+                                 textEl.classList.add('ai-text-content');
+                            }
+
+                             if (msg.analysisFile) {
+                                const fileBox = document.createElement('div');
+                                fileBox.className = 'relative bg-gray-200 border border-gray-300 rounded-lg p-3 flex items-center space-x-3 my-2';
+                                const fileIcon = document.createElement('svg');
+                                fileIcon.className = 'w-6 h-6 text-gray-500 flex-shrink-0';
+                                fileIcon.innerHTML = '<use href="#icon-file-text"></use>';
+                                const fileNameSpan = document.createElement('span');
+                                fileNameSpan.className = 'text-sm text-gray-700 truncate';
+                                fileNameSpan.textContent = msg.analysisFile.name;
+                                fileBox.appendChild(fileIcon);
+                                fileBox.appendChild(fileNameSpan);
+                                textEl.prepend(fileBox);
+                            } else if (msg.imageUrls && msg.imageUrls.length > 0) {
+                                const grid = document.createElement('div');
+                                grid.className = `grid gap-2 mb-2 ${msg.imageUrls.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`;
+                                msg.imageUrls.forEach(url => {
+                                   const img = document.createElement('img');
+                                   img.src = url;
+                                   img.alt = "User uploaded image";
+                                   img.className = 'rounded-lg w-full h-auto object-cover';
+                                   grid.appendChild(img);
+                                });
+                                textEl.prepend(grid);
+                            } else if (msg.imageUrl) { 
+                                const img = document.createElement('img');
+                                img.src = msg.imageUrl;
+                                img.alt = "User uploaded image";
+                                img.className = 'rounded-lg max-w-xs max-h-48 mb-2';
+                                textEl.prepend(img);
+                            }
+                            
+                            if (msg.text) {
+                                const p = document.createElement('p');
+                                p.textContent = msg.text;
+                                textEl.appendChild(p);
+                            }
+                            
+                            const actionsEl = document.createElement('div');
+                            actionsEl.className = 'chat-actions';
+                            
+                            const copyBtn = document.createElement('button');
+                            copyBtn.className = 'action-button copy';
+                            copyBtn.setAttribute('title', 'Copy text');
+                            copyBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-copy"></use></svg>`;
+                            copyBtn.onclick = (e) => window.copyToClipboard(msg.text, copyBtn);
+                            
+                            msgContainer.appendChild(textEl);
+
+                            if (msg.role === 'user') {
+                                actionsEl.classList.add('user');
+                                actionsEl.appendChild(copyBtn);
+                            } else {
+                                actionsEl.classList.add('ai');
+                                
+                                const goodBtn = document.createElement('button');
+                                goodBtn.className = 'action-button feedback';
+                                goodBtn.setAttribute('title', 'Good Response');
+                                goodBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-heart"></use></svg>`;
+                                const badBtn = document.createElement('button');
+                                badBtn.className = 'action-button feedback';
+                                badBtn.setAttribute('title', 'Bad Response');
+                                badBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-flag"></use></svg>`;
+
+                                const feedbackHandler = (e) => {
+                                    const clickedButton = e.currentTarget;
+                                    const otherButton = clickedButton === goodBtn ? badBtn : goodBtn;
+                                    otherButton.classList.remove('clicked');
+                                    clickedButton.classList.toggle('clicked');
+                                };
+
+                                goodBtn.onclick = feedbackHandler;
+                                badBtn.onclick = feedbackHandler;
+                                
+                                actionsEl.appendChild(goodBtn);
+                                actionsEl.appendChild(badBtn);
+                                actionsEl.appendChild(copyBtn);
+                            }
+
+                            msgContainer.appendChild(actionsEl);
+                            chatMessagesEl.appendChild(msgContainer);
+                        });
+                    }
+                    
+                    chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+
+                }, (error) => {
+                     console.error("Error fetching messages:", error);
+                     chatMessagesEl.innerHTML = `<p class="text-red-500 text-sm p-4 text-center">Error loading messages. Please check console.</p>`;
+                });
+            }
+            
+            window.createNewChatSession = async function() {
+                if (!userId) {
+                    openModal('login-modal', null);
+                    return;
+                }
+                
+                if (currentChatId) {
+                    const messagesRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions/${currentChatId}/messages`);
+                    const userMessagesQuery = query(messagesRef, where("role", "==", "user"));
+                    
+                    try {
+                        const snapshot = await getDocs(userMessagesQuery);
+                        
+                        if (snapshot.empty) {
+                            showAlert("Please send at least one message in the current chat before starting a new session.");
+                            return;
+                        }
+                    } catch (error) {
+                        console.error("Error checking current session for messages:", error);
+                        showAlert("Could not verify chat status. Please try again.");
                         return;
                     }
+                }
+
+                const sessionsRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions`);
+                const tempTitle = `${TEMP_TITLE_PREFIX} ${new Date().toLocaleDateString()}`;
+                
+                try {
+                    const newSessionRef = await addDoc(sessionsRef, {
+                        title: tempTitle,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+
+                    window.loadChatSession(newSessionRef.id);
+                    window.navigateTo('chat');
+
                 } catch (error) {
-                    console.error("Error checking current session for messages:", error);
-                    showAlert("Could not verify chat status. Please try again.");
+                    console.error("Error creating new chat session:", error);
+                }
+            }
+            
+            async function generateChatTitle(sessionId, firstUserMessage) {
+                let newTitle = firstUserMessage.trim().substring(0, 40);
+                if (firstUserMessage.trim().length > 40) {
+                    newTitle += '...';
+                }
+                
+                newTitle = newTitle.replace(/[^\w\s\-\']/gi, '').trim();
+
+                if (!newTitle) {
+                    newTitle = 'Untitled Session';
+                }
+                
+                try {
+                    const sessionDocRef = doc(db, `${CHATS_COLLECTION}${userId}/sessions`, sessionId);
+                    await updateDoc(sessionDocRef, { 
+                        title: newTitle,
+                        updatedAt: serverTimestamp()
+                    });
+                    listenForChatSessions(); 
+                    console.log(`Session ${sessionId} title updated to: ${newTitle}`);
+
+                } catch (error) {
+                    console.error("Error updating chat session title:", error);
+                }
+            }
+            
+            async function sendUserMessage() {
+                if (!userId) {
+                    openModal('login-modal', null); 
                     return;
                 }
-            }
-            // --- END NEW CHECK ---
-
-            // If currentChatId is null (user is starting from scratch), OR 
-            // if the check passed (current chat has user content), proceed with new chat creation.
-            
-            const sessionsRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions`);
-            // Set the identifiable temporary title
-            const tempTitle = `${TEMP_TITLE_PREFIX} ${new Date().toLocaleDateString()}`;
-            
-            try {
-                // 1. Create a new session document with the temporary title
-                const newSessionRef = await addDoc(sessionsRef, {
-                    title: tempTitle,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp()
-                });
-
-                // 2. Load the new session.
-                window.loadChatSession(newSessionRef.id);
-                window.navigateTo('chat');
-
-            } catch (error) {
-                console.error("Error creating new chat session:", error);
-            }
-        }
-        
-        // --- NEW: Title Generation Logic ---
-        /**
-         * Generates and updates a title for the chat session based on the first user message.
-         */
-        async function generateChatTitle(sessionId, firstUserMessage) {
-            // Trim and truncate the message for a concise title
-            let newTitle = firstUserMessage.trim().substring(0, 40);
-            if (firstUserMessage.trim().length > 40) {
-                newTitle += '...';
-            }
-            
-            // Clean up common symbols
-            newTitle = newTitle.replace(/[^\w\s\-\']/gi, '').trim();
-
-            if (!newTitle) {
-                newTitle = 'Untitled Session';
-            }
-            
-            try {
-                // Update the session document with the new title
-                const sessionDocRef = doc(db, `${CHATS_COLLECTION}${userId}/sessions`, sessionId);
-                await updateDoc(sessionDocRef, { 
-                    title: newTitle,
-                    updatedAt: serverTimestamp() // Update timestamp to float to top
-                });
-                // Rerendering the sidebar here will make the session appear.
-                listenForChatSessions(); 
-                console.log(`Session ${sessionId} title updated to: ${newTitle}`);
-
-            } catch (error) {
-                console.error("Error updating chat session title:", error);
-            }
-        }
-        // --- END NEW LOGIC ---
-
-
-        // --- EXTERNAL WEBHOOK SEND LOGIC (MODIFIED) ---
-
-        window.sendUserMessage = async function() {
-            if (!userId) {
-                openModal('login-modal', null); 
-                return;
-            }
-            
-            const message = chatInput.value.trim();
-            if (!message) return;
-            
-            let sessionIdToUse = currentChatId;
-            let isFirstUserMessage = false;
-
-            // --- CRITICAL MODIFICATION: Check if a VALID session is loaded ---
-            if (!sessionIdToUse) {
-                // If no chat session ID is loaded, force user to explicitly create one via button.
-                showAlert("Please click 'New Chat' or select an existing session to begin messaging.");
-                return; 
-            } else {
-                // Get the current title of the loaded session (which is NOT in the DOM anymore, so grab it from data)
-                const currentSessionData = chatSessionsData.find(s => s.id === sessionIdToUse);
-                const currentSessionTitle = currentSessionData ? currentSessionData.title : '';
-
-                isFirstUserMessage = currentSessionTitle.startsWith(TEMP_TITLE_PREFIX);
-            }
-            
-            // --- START: Add user message to UI immediately for instant feedback ---
-            const userMsgContainer = document.createElement('div');
-            // MODIFIED: Added flex flex-col items-end for right alignment
-            userMsgContainer.className = 'chat-message-container user max-w-2xl font-normal w-full self-end flex flex-col items-end';
-            
-            const userTextEl = document.createElement('div');
-            userTextEl.className = 'chat-message-text text-base self-end';
-            userTextEl.textContent = message;
-            
-            const userActionsEl = document.createElement('div');
-            // MODIFIED: User actions explicitly justified right (flex-end)
-            userActionsEl.className = 'chat-actions user justify-end';
-            const userCopyBtn = document.createElement('button');
-            userCopyBtn.className = 'action-button copy';
-            userCopyBtn.setAttribute('title', 'Copy text');
-            userCopyBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-copy"></use></svg>`;
-            userCopyBtn.onclick = (e) => window.copyToClipboard(message, userCopyBtn);
-            userActionsEl.appendChild(userCopyBtn);
-            
-            userMsgContainer.appendChild(userTextEl);
-            userMsgContainer.appendChild(userActionsEl);
-
-            if (chatMessagesEl) {
-                if (defaultMessageEl) defaultMessageEl.classList.add('hidden');
-                chatMessagesEl.appendChild(userMsgContainer);
-                chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
-            }
-            // --- END MODIFIED USER MESSAGE ---
-
-            chatInput.value = '';
-
-            const messagesRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions/${sessionIdToUse}/messages`);
-            
-            try {
-                // 1. Save user message to Firestore
-                await addDoc(messagesRef, { 
-                    text: message, 
-                    role: 'user', 
-                    createdAt: serverTimestamp() 
-                });
                 
-                // 2. *NEW CALL* If this is the first user message, generate and update the chat title asynchronously
-                if (isFirstUserMessage) {
-                    generateChatTitle(sessionIdToUse, message);
+                const message = chatInput.value.trim();
+                const images = pendingImages;
+                const fileToSend = isAnalysisMode ? pendingAnalysisFile : null;
+                const fileSentThisTime = !!fileToSend || images.length > 0;
+
+                if (!message && !fileSentThisTime) return;
+                
+                let sessionIdToUse = currentChatId;
+                let isFirstUserMessage = false;
+
+                if (!sessionIdToUse) {
+                    showAlert("Please click 'New Chat' or select an existing session to begin messaging.");
+                    return; 
+                } else {
+                    const currentSessionData = chatSessionsData.find(s => s.id === sessionIdToUse);
+                    const currentSessionTitle = currentSessionData ? currentSessionData.title : '';
+
+                    isFirstUserMessage = currentSessionTitle.startsWith(TEMP_TITLE_PREFIX);
                 }
                 
-                // 3. Show a loading indicator
-                const loadingContainer = document.createElement('div');
-                loadingContainer.className = 'chat-message-container ai loading max-w-2xl font-normal w-full self-start flex flex-col';
-                const loadingTextEl = document.createElement('div');
-                loadingTextEl.className = 'chat-message-text text-base';
-                loadingTextEl.textContent = 'Assistant is typing...';
-                loadingContainer.appendChild(loadingTextEl);
-                
-                if (chatMessagesEl) {
-                    chatMessagesEl.appendChild(loadingContainer);
-                    chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+                chatInput.value = '';
+                sendButton.disabled = true;
+                pendingImages = [];
+                if (isAnalysisMode && fileSentThisTime) {
+                    analysisFileSent = true; 
+                } else if (!isAnalysisMode) {
+                    pendingAnalysisFile = null;
+                    analysisFileSent = false;
                 }
                 
-                // --- Use External Webhook for response generation ---
+                filePreviewContainer.classList.add('hidden');
+
+
+                const messagesRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions/${sessionIdToUse}/messages`);
                 
-                let aiResponseText = 'Error: Failed to fetch response from external webhook.';
-                
-                // Simplified payload for external webhook
-                const payload = { message: message };
-                
-                const maxRetries = 3; 
+                try {
+                    const messageData = { 
+                        text: message, 
+                        role: 'user', 
+                        createdAt: serverTimestamp() 
+                    };
 
-                for (let i = 0; i < maxRetries; i++) {
-                    try {
-                        const response = await fetch(WEBHOOK_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
+                    if (images.length > 0) {
+                        messageData.imageUrls = await Promise.all(images.map(img => createThumbnail(img.dataUrl)));
+                    }
 
-                        if (!response.ok) {
-                            throw new Error(`External Webhook HTTP error! Status: ${response.status}`);
-                        }
-
-                        const result = await response.json();
-                        
-                        // Attempting to extract text from common webhook response fields
-                        if (result && typeof result.output === 'string') {
-                            aiResponseText = result.output;
-                        } else if (result && typeof result.text === 'string') {
-                            aiResponseText = result.text;
-                        } else if (result && typeof result.response === 'string') {
-                            aiResponseText = result.response;
-                        } else if (result) {
-                            // Fallback for complex webhook responses
-                            aiResponseText = JSON.stringify(result, null, 2); 
-                        } else {
-                            aiResponseText = 'Received empty response from the external webhook.';
-                        }
-
-                        break; 
-
-                    } catch (error) {
-                        console.error(`External Webhook attempt ${i + 1} failed:`, error);
-                        if (i < maxRetries - 1) {
-                            const delay = Math.pow(2, i) * 1000;
-                            await sleep(delay);
-                        } else {
-                            aiResponseText = `Final connection error after ${maxRetries} attempts: ${error.message}`;
+                    if (fileToSend && fileSentThisTime) {
+                        messageData.analysisFile = { name: fileToSend.name, type: fileToSend.type };
+                        if (fileToSend.type.startsWith('image/')) {
+                            messageData.imageUrl = await createThumbnail(fileToSend.dataUrl);
                         }
                     }
-                }
-                // --- END MODIFICATION ---
-                
-                // 5. Remove loading indicator and save AI response to Firestore
-                loadingContainer.remove();
 
-                await addDoc(messagesRef, { 
-                    text: aiResponseText, 
-                    role: 'ai', 
-                    createdAt: serverTimestamp() 
-                });
+                    await addDoc(messagesRef, messageData);
+                    
+                    if (isFirstUserMessage) {
+                        generateChatTitle(sessionIdToUse, message || "[File]");
+                    }
+                    
+                    const loadingContainer = document.createElement('div');
+                    loadingContainer.className = 'chat-message-container ai loading max-w-2xl font-normal w-full self-start flex flex-col';
+                    const loadingTextEl = document.createElement('div');
+                    loadingTextEl.className = 'chat-message-text text-base';
+                    loadingTextEl.textContent = isAnalysisMode ? 'AI is analyzing...' : 'AI is typing...';
+                    loadingContainer.appendChild(loadingTextEl);
+                    
+                    if (chatMessagesEl) {
+                        chatMessagesEl.appendChild(loadingContainer);
+                        chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+                    }
+                    
+                    let aiResponseText = 'Error: Failed to fetch response from external webhook.';
+                    
+                    const targetUrl = isAnalysisMode ? ANALYSIS_WEBHOOK_URL : WEBHOOK_URL;
+                    
+                    let payload = { message: message, userId: userId };
+                    if (isAnalysisMode) {
+                        if (analysisFileSent) {
+                             const filePayload = (fileSentThisTime && analysisFile) ? {
+                                dataUrl: analysisFile.dataUrl,
+                                mimetype: analysisFile.type,
+                                name: analysisFile.name
+                            } : null;
 
-                // Update session timestamp for sorting
-                const sessionDocRef = doc(db, `${CHATS_COLLECTION}${userId}/sessions`, sessionIdToUse);
-                await updateDoc(sessionDocRef, { updatedAt: serverTimestamp() });
-
-            } catch (error) {
-                console.error("Error sending message or saving to Firestore:", error);
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'chat-message-container ai max-w-2xl font-normal w-full self-start flex flex-col';
-                errorDiv.innerHTML = `<div class="chat-message-text text-base text-red-500">Error: ${error.message}</div>`;
-                if(chatMessagesEl) chatMessagesEl.appendChild(errorDiv);
-            }
-        }
-
-
-        // --- MODAL LOGIC (Made global for inline access) ---
-        // NOTE: A simple text placeholder is required here since we can't use alert()
-        const alertPlaceholder = document.createElement('div');
-        alertPlaceholder.className = 'fixed bottom-4 right-4 bg-red-600 text-white p-3 rounded-lg shadow-xl z-50 transition-opacity duration-300 opacity-0 pointer-events-none';
-        document.body.appendChild(alertPlaceholder);
-
-        function showAlert(message) {
-            alertPlaceholder.textContent = message;
-            alertPlaceholder.classList.remove('opacity-0', 'pointer-events-none');
-            alertPlaceholder.classList.add('opacity-100');
-            setTimeout(() => {
-                alertPlaceholder.classList.remove('opacity-100');
-                alertPlaceholder.classList.add('opacity-0', 'pointer-events-none');
-            }, 3000);
-        }
-
-        window.openModal = function(id, event) { 
-            if (event && typeof event.preventDefault === 'function') { 
-                event.preventDefault();
-            }
-            const modal = document.getElementById(id);
-            if (modal) {
-                // Clear previous errors
-                if (id === 'login-modal') document.getElementById('login-error-message').classList.add('hidden');
-                if (id === 'signup-modal') document.getElementById('signup-error-message').classList.add('hidden');
-                
-                modal.classList.add('open');
-            }
-        }
-
-        window.closeModal = function(id) {
-            const modal = document.getElementById(id);
-            if (modal) {
-                modal.classList.remove('open');
-            }
-        }
-
-
-        // --- NAVIGATION LOGIC (Made global for inline access) ---
-        window.navigateTo = function(page, event) {
-            if (event) {
-                event.preventDefault();
-            }
-            
-            // Primary check: Ensure auth is initialized and user is present for chat access
-            if (page === 'chat') {
-                if (!auth || !auth.currentUser) {
-                    window.openModal('login-modal', event); 
-                    return;
-                }
-            }
-
-            const targetEl = mainContentPages[page];
-            if (!targetEl) return;
-
-            Object.values(mainContentPages).forEach(el => {
-                if (el) {
-                    el.classList.add('hidden');
-                    el.classList.remove('visible');
-                }
-            });
-            footerEl.classList.add('hidden');
-
-            targetEl.classList.remove('hidden');
-            
-            setTimeout(() => {
-                targetEl.classList.add('visible');
-            }, 10);
-            
-            if (page === 'chat') {
-                // MODIFIED: No title update needed, title is hidden.
-
-                // Load the most recent visible session if no chat is currently loaded.
-                if (!currentChatId) {
-                    const visibleSessions = chatSessionsData.filter(s => !s.title.startsWith(TEMP_TITLE_PREFIX));
-                    if (visibleSessions.length > 0) {
-                        window.loadChatSession(visibleSessions[0].id);
+                            if (analysisFile && analysisFile.type.startsWith('image/')) {
+                                payload.image = filePayload;
+                            } else if (analysisFile && analysisFile.type.startsWith('video/')) {
+                                payload.video = filePayload;
+                            } else if (analysisFile && analysisFile.type.startsWith('audio/')) {
+                                payload.audio = filePayload;
+                            } else {
+                                // Handles subsequent messages where file is not re-sent
+                                payload.image = null;
+                                payload.video = null;
+                                payload.audio = null;
+                            }
+                        }
                     } else {
-                        // If no visible sessions and no currentId, load the *most* recent session (which must be the temp one)
-                         if (chatSessionsData.length > 0) {
-                            window.loadChatSession(chatSessionsData[0].id);
-                        } else {
-                            // This scenario should be rare if handleAuthChange works correctly, but handles the true zero-state.
-                            if (defaultMessageEl) defaultMessageEl.classList.remove('hidden');
+                        if (images.length > 0) {
+                            payload.images = images.map(img => img.dataUrl);
                         }
                     }
-                } 
-            } else { // 'home' or 'portfolio'
-                footerEl.classList.remove('hidden');
+                    
+                    const maxRetries = 3; 
+
+                    for (let i = 0; i < maxRetries; i++) {
+                        try {
+                            const response = await fetch(targetUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+
+                            if (!response.ok) {
+                                throw new Error(`External Webhook HTTP error! Status: ${response.status}`);
+                            }
+
+                            const result = await response.json();
+                            let rawText = '';
+                            
+                            if (result && typeof result.output === 'string') {
+                                rawText = result.output;
+                            } else if (result && typeof result.text === 'string') {
+                                rawText = result.text;
+                            } else if (result && typeof result.response === 'string') {
+                                rawText = result.response;
+                            } else if (result) {
+                                rawText = JSON.stringify(result, null, 2); 
+                            } else {
+                                rawText = 'Received empty response from the external webhook.';
+                            }
+
+                            aiResponseText = rawText.replace(/\*/g, '').trim();
+
+                            break; 
+
+                        } catch (error) {
+                            console.error(`External Webhook attempt ${i + 1} failed:`, error);
+                            if (i < maxRetries - 1) {
+                                const delay = Math.pow(2, i) * 1000;
+                                await sleep(delay);
+                            } else {
+                                aiResponseText = `Error: Could not connect to the webhook. This is likely a CORS or network issue with the webhook server. Details: ${error.message}`;
+                            }
+                        }
+                    }
+                    
+                    loadingContainer.remove();
+
+                    await addDoc(messagesRef, { 
+                        text: aiResponseText, 
+                        role: 'ai', 
+                        createdAt: serverTimestamp() 
+                    });
+                    
+                    // After sending a message with a file, we should clear the pending file for the next message
+                    if (fileSentThisTime) {
+                        pendingAnalysisFile = null;
+                    }
+
+                    const sessionDocRef = doc(db, `${CHATS_COLLECTION}${userId}/sessions`, sessionIdToUse);
+                    await updateDoc(sessionDocRef, { updatedAt: serverTimestamp() });
+
+                } catch (error) {
+                    console.error("Error sending message or saving to Firestore:", error);
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'chat-message-container ai max-w-2xl font-normal w-full self-start flex flex-col';
+                    errorDiv.innerHTML = `<div class="chat-message-text text-base text-red-500">Error: ${error.message}</div>`;
+                    if(chatMessagesEl) chatMessagesEl.appendChild(errorDiv);
+                }
             }
-        }
+
+            const alertPlaceholder = document.createElement('div');
+            alertPlaceholder.className = 'fixed bottom-4 right-4 bg-black text-white p-3 rounded-lg shadow-xl z-50 transition-opacity duration-300 opacity-0 pointer-events-none';
+            document.body.appendChild(alertPlaceholder);
+
+            function showAlert(message) {
+                alertPlaceholder.textContent = message;
+                alertPlaceholder.classList.remove('opacity-0', 'pointer-events-none');
+                alertPlaceholder.classList.add('opacity-100');
+                setTimeout(() => {
+                    alertPlaceholder.classList.remove('opacity-100');
+                    alertPlaceholder.classList.add('opacity-0', 'pointer-events-none');
+                }, 3000);
+            }
+
+            window.openModal = function(id, event) { 
+                if (event && typeof event.preventDefault === 'function') { 
+                    event.preventDefault();
+                }
+                const modal = document.getElementById(id);
+                if (modal) {
+                    if (id === 'login-modal') document.getElementById('login-error-message').classList.add('hidden');
+                    if (id === 'signup-modal') document.getElementById('signup-error-message').classList.add('hidden');
+                    
+                    modal.classList.add('open');
+                }
+            }
+
+            window.closeModal = function(id) {
+                const modal = document.getElementById(id);
+                if (modal) {
+                    modal.classList.remove('open');
+                }
+            }
+
+            window.closeMobileMenu = function() {
+                if (mobileMenu) {
+                    mobileMenu.classList.add('-translate-x-full');
+                }
+            }
+
+            function closeChatSidebar() {
+                if (chatSidebar && sidebarBackdrop) {
+                    chatSidebar.classList.add('-translate-x-full');
+                    sidebarBackdrop.classList.add('hidden');
+                }
+            }
+
+            window.navigateTo = function(page, event) {
+                if (event) {
+                    event.preventDefault();
+                }
+                
+                if (page === 'chat' || page === 'image-gen') {
+                    if (!auth || !auth.currentUser) {
+                        window.openModal('login-modal', event); 
+                        return;
+                    }
+                }
+
+                const targetEl = mainContentPages[page];
+                if (!targetEl) return;
+
+                Object.values(mainContentPages).forEach(el => {
+                    if (el) {
+                        el.classList.add('hidden');
+                        el.classList.remove('visible');
+                    }
+                });
+                footerEl.classList.add('hidden');
+
+                targetEl.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    targetEl.classList.add('visible');
+                }, 10);
+                
+                if (page === 'chat') {
+                    if (!currentChatId) {
+                        const visibleSessions = chatSessionsData.filter(s => !s.title.startsWith(TEMP_TITLE_PREFIX));
+                        if (visibleSessions.length > 0) {
+                            window.loadChatSession(visibleSessions[0].id);
+                        } else {
+                             if (chatSessionsData.length > 0) {
+                                window.loadChatSession(chatSessionsData[0].id);
+                            } else {
+                                if (defaultMessageEl) defaultMessageEl.classList.remove('hidden');
+                            }
+                        }
+                    } 
+                } else if (page === 'home' || page === 'portfolio') {
+                    footerEl.classList.remove('hidden');
+                }
+            }
+
+            async function generateImage() {
+                const prompt = imagePromptInput.value.trim();
+                if (!prompt) {
+                    showAlert("Please enter a prompt to generate an image.");
+                    return;
+                }
+
+                imageLoadingIndicator.classList.remove('hidden');
+                imageDisplayArea.innerHTML = '';
+                imageDisplayArea.appendChild(imageLoadingIndicator);
+                let generatedImageBlob = null;
 
 
-        document.addEventListener('DOMContentLoaded', () => {
+                const API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0";
+                
+                try {
+                    const response = await fetch(API_URL, {
+                        headers: { 
+                            "Authorization": `Bearer ${HF_API_TOKEN}`,
+                            "Content-Type": "application/json" 
+                        },
+                        method: "POST",
+                        body: JSON.stringify({ "inputs": prompt }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    generatedImageBlob = await response.blob();
+                    const imageUrl = URL.createObjectURL(generatedImageBlob);
+                    
+                    const img = document.createElement('img');
+                    img.src = imageUrl;
+                    img.className = "max-w-full h-auto rounded-lg shadow-lg";
+                    
+                    const controlsContainer = document.createElement('div');
+                    controlsContainer.className = 'flex items-center justify-center space-x-4 mt-4';
+                    
+                    const downloadBtn = document.createElement('button');
+                    downloadBtn.className = 'action-button p-2 bg-gray-200 rounded-full hover:bg-gray-300';
+                    downloadBtn.title = "Download Image";
+                    downloadBtn.innerHTML = `<svg class="w-5 h-5"><use href="#icon-download"></use></svg>`;
+                    downloadBtn.onclick = () => {
+                        const link = document.createElement('a');
+                        link.href = imageUrl;
+                        link.download = `generated-image-${Date.now()}.png`;
+                        link.click();
+                    };
+
+                    const goodBtn = document.createElement('button');
+                    goodBtn.className = 'action-button feedback p-2 bg-gray-200 rounded-full hover:bg-gray-300';
+                    goodBtn.title = "Good Response";
+                    goodBtn.innerHTML = `<svg class="w-5 h-5"><use href="#icon-heart"></use></svg>`;
+                    
+                    const badBtn = document.createElement('button');
+                    badBtn.className = 'action-button feedback p-2 bg-gray-200 rounded-full hover:bg-gray-300';
+                    badBtn.title = "Bad Response";
+                    badBtn.innerHTML = `<svg class="w-5 h-5"><use href="#icon-flag"></use></svg>`;
+                    
+                    const feedbackHandler = (e) => {
+                        const clickedButton = e.currentTarget;
+                        const otherButton = clickedButton === goodBtn ? badBtn : goodBtn;
+                        otherButton.classList.remove('clicked');
+                        clickedButton.classList.toggle('clicked');
+                    };
+
+                    goodBtn.onclick = feedbackHandler;
+                    badBtn.onclick = feedbackHandler;
+
+                    controlsContainer.appendChild(downloadBtn);
+                    controlsContainer.appendChild(goodBtn);
+                    controlsContainer.appendChild(badBtn);
+
+                    imageDisplayArea.innerHTML = '';
+                    imageDisplayArea.appendChild(img);
+                    imageDisplayArea.appendChild(controlsContainer);
+
+
+                } catch (error) {
+                    console.error("Image generation error:", error);
+                    showAlert("Failed to generate image. Please try again.");
+                    imageLoadingIndicator.classList.add('hidden');
+                }
+            }
+
             initializeFirebase();
 
-            // Setup send button event listener
-            sendButton.addEventListener('click', window.sendUserMessage);
+            chatInput.addEventListener('input', () => {
+                sendButton.disabled = chatInput.value.trim() === '' && pendingImages.length === 0 && !pendingAnalysisFile;
+            });
 
-            // Allow sending with Enter key
+            sendButton.addEventListener('click', () => sendUserMessage());
+
             chatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
+                if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    window.sendUserMessage();
+                    sendUserMessage();
                 }
             });
             
-            // Handle the "New Chat" button functionality
             newChatButton.addEventListener('click', window.createNewChatSession);
+            if(collapsedNewChatBtn) collapsedNewChatBtn.addEventListener('click', window.createNewChatSession);
+            if(mobileNewChatButton) mobileNewChatButton.addEventListener('click', window.createNewChatSession);
+            
+            // Main mobile menu listeners
+            if(mobileMenuButton) mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.remove('-translate-x-full');
+            });
+
+            if(closeMobileMenuButton) closeMobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.add('-translate-x-full');
+            });
+
+            // Chat sidebar mobile listeners
+            if(sidebarToggleBtn) {
+                sidebarToggleBtn.addEventListener('click', () => {
+                    if (window.innerWidth < 768) { 
+                        chatSidebar.classList.remove('-translate-x-full');
+                        sidebarBackdrop.classList.remove('hidden');
+                    }
+                });
+            }
+            
+
+            if(sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeChatSidebar);
+            if(backToChatBtn) backToChatBtn.addEventListener('click', closeChatSidebar);
+
+            // Sidebar collapse/expand listener for desktop
+            const toggleSidebar = () => {
+                document.body.classList.toggle('sidebar-collapsed');
+                chatSidebar.classList.toggle('collapsed');
+            };
+            
+            if (sidebarToggleBtn) sidebarToggleBtn.addEventListener('click', toggleSidebar);
+
+            // --- New Feature Listeners ---
+            if(imageUploadButton) imageUploadButton.addEventListener('click', () => imageInput.click());
+            if(imageInput) imageInput.addEventListener('change', async (e) => {
+                if (e.target.files.length > 5) {
+                    showAlert("You can only upload a maximum of 5 images.");
+                    e.target.value = '';
+                    return;
+                }
+                pendingImages = []; // Clear previous batch
+                for (const file of e.target.files) {
+                    if (!file.type.startsWith('image/')) {
+                        showAlert(`File ${file.name} is not an image and will be skipped.`);
+                        continue;
+                    }
+                    let dataUrl = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = e => resolve(e.target.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
+
+                    if (file.size > 2 * 1024 * 1024) { // 2MB
+                        showAlert(`Compressing ${file.name}...`);
+                        try {
+                            dataUrl = await compressImage(file, 2 * 1024 * 1024);
+                        } catch (err) {
+                            showAlert(`Compression failed for ${file.name}.`);
+                            console.error(err);
+                            continue; // Skip this file
+                        }
+                    }
+                    pendingImages.push({
+                        name: file.name,
+                        type: 'image/jpeg', // Since we compress to jpeg
+                        dataUrl: dataUrl
+                    });
+                }
+
+                if (pendingImages.length > 0) {
+                    filePreviewName.textContent = `${pendingImages.length} image(s) selected`;
+                    filePreviewContainer.classList.remove('hidden');
+                    sendButton.disabled = false;
+                }
+                
+                e.target.value = ''; // Reset input
+            });
+
+            removeFilePreviewBtn.addEventListener('click', () => {
+                pendingImages = [];
+                pendingAnalysisFile = null;
+                filePreviewContainer.classList.add('hidden');
+                sendButton.disabled = chatInput.value.trim() === '';
+            });
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                const recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.lang = 'en-US';
+                recognition.interimResults = false;
+                
+                recognition.onstart = () => voiceButton.classList.add('recording');
+                recognition.onend = () => voiceButton.classList.remove('recording');
+                recognition.onerror = (e) => {
+                    console.error("Speech Recognition Error", e.error);
+                    showAlert(`Voice error: ${e.error}`);
+                }
+                recognition.onresult = (e) => {
+                    chatInput.value += e.results[0][0].transcript;
+                    sendButton.disabled = false;
+                }
+                
+                voiceButton.addEventListener('click', () => {
+                    if (voiceButton.classList.contains('recording')) {
+                        recognition.stop();
+                    } else {
+                        recognition.start();
+                    }
+                });
+            } else {
+                voiceButton.disabled = true;
+                voiceButton.title = 'Voice recognition not supported in this browser.';
+            }
+
+            if(generateImageBtn) generateImageBtn.addEventListener('click', generateImage);
+
+            // --- Analysis Mode Logic ---
+            if (analyzeButton) {
+                analyzeButton.addEventListener('click', () => {
+                    isAnalysisMode = !isAnalysisMode;
+                    if (isAnalysisMode) {
+                        analyzeButton.classList.add('text-blue-500');
+                        imageUploadButton.classList.add('hidden');
+                        voiceButton.classList.add('hidden');
+                        plusFileButton.classList.remove('hidden');
+                        chatInput.placeholder = "Add a file and ask a question about it...";
+                    } else {
+                        analyzeButton.classList.remove('text-blue-500');
+                        imageUploadButton.classList.remove('hidden');
+                        voiceButton.classList.remove('hidden');
+                        plusFileButton.classList.add('hidden');
+                        chatInput.placeholder = "Ask a question...";
+                        pendingAnalysisFile = null; // Clear file when exiting mode
+                        analysisFileSent = false;
+                        filePreviewContainer.classList.add('hidden');
+                    }
+                });
+            }
+
+            if (plusFileButton) {
+                plusFileButton.addEventListener('click', () => analysisFileInput.click());
+            }
+
+            if(analysisFileInput) analysisFileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                if (file.type.startsWith('video/')) {
+                    if (file.size > 4 * 1024 * 1024) {
+                        showAlert("Video file is larger than 4MB. Client-side compression is not applied for large videos.");
+                    }
+                    const video = document.createElement('video');
+                    video.preload = 'metadata';
+                    video.onloadedmetadata = function() {
+                        window.URL.revokeObjectURL(video.src);
+                        if (video.duration > 10) {
+                            showAlert('Video cannot be longer than 10 seconds.');
+                            e.target.value = ''; // Reset file input
+                            return;
+                        }
+                        readFileForAnalysis(file);
+                    }
+                    video.src = URL.createObjectURL(file);
+                } else if (file.type.startsWith('image/')) {
+                     if (file.size > 2 * 1024 * 1024) {
+                        showAlert('Compressing image...');
+                        compressImage(file, 2 * 1024 * 1024).then(dataUrl => {
+                            const newFile = { name: file.name, type: 'image/jpeg', dataUrl: dataUrl };
+                            readFileForAnalysis(newFile, true);
+                        }).catch(err => {
+                           showAlert("Image compression failed.");
+                           console.error(err);
+                        });
+                     } else {
+                       readFileForAnalysis(file);
+                     }
+                } else {
+                    readFileForAnalysis(file);
+                }
+                e.target.value = ''; // Reset input
+            });
+            
+            function readFileForAnalysis(file, isAlreadyDataUrl = false) {
+                 const reader = new FileReader();
+                reader.onload = (e) => {
+                    pendingAnalysisFile = {
+                        name: file.name,
+                        type: file.type,
+                        dataUrl: e.target.result,
+                    };
+                    analysisFileSent = false;
+                    
+                    filePreviewName.textContent = file.name;
+                    filePreviewContainer.classList.remove('hidden');
+                    sendButton.disabled = false;
+                };
+                
+                if (isAlreadyDataUrl) {
+                     pendingAnalysisFile = {
+                        name: file.name,
+                        type: file.type,
+                        dataUrl: file.dataUrl,
+                    };
+                    analysisFileSent = false;
+                    filePreviewName.textContent = file.name;
+                    filePreviewContainer.classList.remove('hidden');
+                    sendButton.disabled = false;
+                } else {
+                    reader.readAsDataURL(file);
+                }
+            }
+
         });
     </script>
 
