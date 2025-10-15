@@ -8,6 +8,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PDF processing libraries -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
     <style>
         :root {
             --font-inter: 'Inter', sans-serif;
@@ -383,8 +386,8 @@
     </style>
 </head>
 <body class="antialiased">
-    <input type="file" id="image-input" accept="image/*" class="hidden" multiple>
-    <input type="file" id="analysis-file-input" accept="image/*,video/*,audio/*" class="hidden">
+    <input type="file" id="image-input" accept="image/*,application/pdf" class="hidden" multiple>
+    <input type="file" id="analysis-file-input" accept="image/*,video/*,audio/*,application/pdf" class="hidden">
 
     
     <!-- SVG Icon Definitions (Hidden) -->
@@ -832,7 +835,8 @@
 
                 <div id="file-preview-container" class="hidden p-4 md:px-8 flex justify-center">
                     <div class="relative bg-gray-100 border border-gray-300 rounded-lg p-3 flex items-center space-x-3 max-w-sm w-full">
-                        <svg class="w-6 h-6 text-gray-500 flex-shrink-0"><use href="#icon-file-text"></use></svg>
+                        <img id="file-preview-thumbnail" class="w-10 h-10 rounded object-cover bg-gray-200 hidden" alt="File preview">
+                        <svg id="file-preview-icon" class="w-6 h-6 text-gray-500 flex-shrink-0"><use href="#icon-file-text"></use></svg>
                         <span id="file-preview-name" class="text-sm text-gray-700 truncate"></span>
                         <button id="remove-file-preview-btn" class="absolute top-0 right-0 -mt-2 -mr-2 bg-red-500 text-white rounded-full p-1 leading-none">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -1137,6 +1141,9 @@
         // MODIFIED: Added getDocs and where for the new chat session validation logic
         import { getFirestore, collection, query, orderBy, addDoc, onSnapshot, serverTimestamp, doc, updateDoc, setLogLevel, getDocs, where, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
+        const { PDFDocument } = PDFLib;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js`;
+
         // --- Firebase Debugging (MANDATORY for support) ---
         setLogLevel('debug');
 
@@ -1156,7 +1163,6 @@
         let activeChatUnsubscribe = null;
         let sessionsUnsubscribe = null;
         
-        const HF_API_TOKEN = "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";
         const WEBHOOK_URL = 'https://umarworks.app.n8n.cloud/webhook/chatinput';
         const ANALYSIS_WEBHOOK_URL = 'https://umarworks.app.n8n.cloud/webhook/analyze';
 
@@ -1172,6 +1178,7 @@
             const chatPageEl = document.getElementById('chat-page');
             const footerEl = document.getElementById('footer');
             const portfolioPageEl = document.getElementById('portfolio-page'); 
+            const aboutPageEl = document.getElementById('about-page');
             const defaultMessageEl = document.getElementById('default-message');
             const authLinkContainer = document.getElementById('auth-link-container');
             const userStatusText = document.getElementById('user-status-text');
@@ -1204,6 +1211,8 @@
             const filePreviewContainer = document.getElementById('file-preview-container');
             const filePreviewName = document.getElementById('file-preview-name');
             const removeFilePreviewBtn = document.getElementById('remove-file-preview-btn');
+            const filePreviewThumbnail = document.getElementById('file-preview-thumbnail');
+            const filePreviewIcon = document.getElementById('file-preview-icon');
             let pendingImages = [];
             let isAnalysisMode = false;
             let pendingAnalysisFile = null;
@@ -1213,12 +1222,97 @@
                 'home': homePageEl,
                 'chat': chatPageEl,
                 'portfolio': portfolioPageEl,
-                'image-gen': imageGenPage
+                'image-gen': imageGenPage,
+                'about': aboutPageEl
             };
 
             // --- UTILITY FUNCTIONS ---
             const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
             
+            function dataURLtoFile(dataurl, filename) {
+                var arr = dataurl.split(','),
+                    mimeMatch = arr[0].match(/:(.*?);/),
+                    mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream',
+                    bstr = atob(arr[1]), 
+                    n = bstr.length, 
+                    u8arr = new Uint8Array(n);
+                while(n--){
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                return new File([u8arr], filename, {type:mime});
+            }
+
+            async function createPdfThumbnail(fileOrDataUrl) {
+                let loadingTask;
+                if (fileOrDataUrl instanceof File) {
+                    const arrayBuffer = await fileOrDataUrl.arrayBuffer();
+                    loadingTask = pdfjsLib.getDocument(arrayBuffer);
+                } else { // is dataURL
+                    const raw = atob(fileOrDataUrl.split(',')[1]);
+                    const rawLength = raw.length;
+                    const array = new Uint8Array(new ArrayBuffer(rawLength));
+                    for(let i = 0; i < rawLength; i++) {
+                        array[i] = raw.charCodeAt(i);
+                    }
+                    loadingTask = pdfjsLib.getDocument(array);
+                }
+
+                const pdf = await loadingTask.promise;
+                const page = await pdf.getPage(1); // Get the first page
+                const viewport = page.getViewport({ scale: 0.5 }); // Small scale for thumbnail
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                await page.render({ canvasContext: context, viewport: viewport }).promise;
+                return canvas.toDataURL(); // Returns a data URL of the thumbnail
+            }
+
+            async function compressPdf(file) {
+                showAlert('Compressing PDF, this may take a moment...');
+                const arrayBuffer = await file.arrayBuffer();
+                const pdfDoc = await PDFDocument.create();
+                const loadingTask = pdfjsLib.getDocument(arrayBuffer);
+                const originalPdf = await loadingTask.promise;
+                const numPages = originalPdf.numPages;
+                const quality = 0.7; // Compression quality for images
+
+                for (let i = 1; i <= numPages; i++) {
+                    const page = await originalPdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 1.5 }); // A reasonable scale for quality
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+                    const jpegImageDataUrl = canvas.toDataURL('image/jpeg', quality);
+                    const jpegImageBytes = await fetch(jpegImageDataUrl).then(res => res.arrayBuffer());
+                    const jpegImage = await pdfDoc.embedJpg(jpegImageBytes);
+
+                    const newPage = pdfDoc.addPage([viewport.width, viewport.height]);
+                    newPage.drawImage(jpegImage, {
+                        x: 0,
+                        y: 0,
+                        width: newPage.getWidth(),
+                        height: newPage.getHeight(),
+                    });
+                }
+
+                const pdfBytes = await pdfDoc.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                
+                if (blob.size > file.size) {
+                    showAlert("Compression resulted in a larger file. Using original.");
+                    return file; // Return original if compression makes it bigger
+                }
+                
+                showAlert("PDF compression complete.");
+                return new File([blob], file.name, { type: 'application/pdf' });
+            }
+
             async function createThumbnail(dataUrl) {
                 return new Promise((resolve, reject) => {
                     const img = new Image();
@@ -1656,13 +1750,11 @@
                             await createInitialDefaultSession();
                         }
                     }
-
-                    showAlert(`Session deleted.`);
                 } catch (error) {
                     console.error("Error deleting session:", error);
                     showAlert("Failed to delete session.");
                 }
-            }
+            };
 
             window.loadChatSession = function(sessionId) {
                 if (!userId) {
@@ -1696,15 +1788,18 @@
                             const msg = doc.data();
                             
                             const msgContainer = document.createElement('div');
-                            msgContainer.className = `chat-message-container max-w-2xl font-normal w-full ${
-                                msg.role === 'user' ? 'self-end flex flex-col items-end' : 'self-start flex flex-col items-start'
-                            }`;
+                            msgContainer.className = `chat-message-container max-w-2xl font-normal w-full self-start flex flex-col items-start`;
                             
+                            // MODIFIED: Role-based alignment is now handled here
+                            if (msg.role === 'user') {
+                                msgContainer.classList.add('self-end', 'items-end');
+                            } else {
+                                msgContainer.classList.add('self-start', 'items-start');
+                            }
+
                             const textEl = document.createElement('div');
-                            textEl.className = `chat-message-text text-base ${
-                                msg.role === 'user' ? 'self-end' : 'self-start'
-                            }`;
-                            if (msg.role === 'ai') {
+                            textEl.className = `chat-message-text text-base`;
+                             if (msg.role === 'ai') {
                                  textEl.classList.add('ai-text-content');
                             }
 
@@ -1740,9 +1835,13 @@
                             }
                             
                             if (msg.text) {
-                                const p = document.createElement('p');
-                                p.textContent = msg.text;
-                                textEl.appendChild(p);
+                                if (msg.role === 'ai') {
+                                    textEl.innerHTML += formatAIResponseForHTML(msg.text);
+                                } else {
+                                    const p = document.createElement('p');
+                                    p.textContent = msg.text;
+                                    textEl.appendChild(p);
+                                }
                             }
                             
                             const actionsEl = document.createElement('div');
@@ -1869,50 +1968,46 @@
             
             async function sendUserMessage() {
                 if (!userId) {
-                    openModal('login-modal', null); 
+                    openModal('login-modal', null);
                     return;
                 }
-                
+
                 const message = chatInput.value.trim();
                 const images = pendingImages;
-                const fileToSend = isAnalysisMode ? pendingAnalysisFile : null;
+                let fileToSend = isAnalysisMode ? pendingAnalysisFile : null;
                 const fileSentThisTime = !!fileToSend || images.length > 0;
 
                 if (!message && !fileSentThisTime) return;
-                
+
                 let sessionIdToUse = currentChatId;
                 let isFirstUserMessage = false;
 
                 if (!sessionIdToUse) {
                     showAlert("Please click 'New Chat' or select an existing session to begin messaging.");
-                    return; 
+                    return;
                 } else {
                     const currentSessionData = chatSessionsData.find(s => s.id === sessionIdToUse);
                     const currentSessionTitle = currentSessionData ? currentSessionData.title : '';
-
                     isFirstUserMessage = currentSessionTitle.startsWith(TEMP_TITLE_PREFIX);
                 }
-                
+
                 chatInput.value = '';
                 sendButton.disabled = true;
                 pendingImages = [];
-                if (isAnalysisMode && fileSentThisTime) {
-                    analysisFileSent = true; 
+                if (fileSentThisTime && isAnalysisMode) {
+                    analysisFileSent = true;
                 } else if (!isAnalysisMode) {
                     pendingAnalysisFile = null;
-                    analysisFileSent = false;
                 }
-                
                 filePreviewContainer.classList.add('hidden');
 
-
                 const messagesRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions/${sessionIdToUse}/messages`);
-                
+
                 try {
-                    const messageData = { 
-                        text: message, 
-                        role: 'user', 
-                        createdAt: serverTimestamp() 
+                    const messageData = {
+                        text: message,
+                        role: 'user',
+                        createdAt: serverTimestamp()
                     };
 
                     if (images.length > 0) {
@@ -1922,69 +2017,100 @@
                     if (fileToSend && fileSentThisTime) {
                         messageData.analysisFile = { name: fileToSend.name, type: fileToSend.type };
                         if (fileToSend.type.startsWith('image/')) {
-                            messageData.imageUrl = await createThumbnail(fileToSend.dataUrl);
+                            const dataUrl = await new Promise((resolve, reject) => {
+                                const reader = new FileReader();
+                                reader.onload = e => resolve(e.target.result);
+                                reader.onerror = reject;
+                                reader.readAsDataURL(fileToSend);
+                            });
+                            messageData.imageUrl = await createThumbnail(dataUrl);
                         }
                     }
 
                     await addDoc(messagesRef, messageData);
-                    
+
                     if (isFirstUserMessage) {
                         generateChatTitle(sessionIdToUse, message || "[File]");
                     }
-                    
+
                     const loadingContainer = document.createElement('div');
                     loadingContainer.className = 'chat-message-container ai loading max-w-2xl font-normal w-full self-start flex flex-col';
                     const loadingTextEl = document.createElement('div');
                     loadingTextEl.className = 'chat-message-text text-base';
                     loadingTextEl.textContent = isAnalysisMode ? 'AI is analyzing...' : 'AI is typing...';
                     loadingContainer.appendChild(loadingTextEl);
-                    
+
                     if (chatMessagesEl) {
                         chatMessagesEl.appendChild(loadingContainer);
                         chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
                     }
                     
                     let aiResponseText = 'Error: Failed to fetch response from external webhook.';
-                    
                     const targetUrl = isAnalysisMode ? ANALYSIS_WEBHOOK_URL : WEBHOOK_URL;
-                    
-                    let payload = { message: message, userId: userId };
-                    if (isAnalysisMode) {
-                        if (analysisFileSent) {
-                             const filePayload = (fileSentThisTime && analysisFile) ? {
-                                dataUrl: analysisFile.dataUrl,
-                                mimetype: analysisFile.type,
-                                name: analysisFile.name
-                            } : null;
+                    let payload;
+                    let fetchOptions;
 
-                            if (analysisFile && analysisFile.type.startsWith('image/')) {
-                                payload.image = filePayload;
-                            } else if (analysisFile && analysisFile.type.startsWith('video/')) {
-                                payload.video = filePayload;
-                            } else if (analysisFile && analysisFile.type.startsWith('audio/')) {
-                                payload.audio = filePayload;
-                            } else {
-                                // Handles subsequent messages where file is not re-sent
-                                payload.image = null;
-                                payload.video = null;
-                                payload.audio = null;
+                    if (isAnalysisMode && fileToSend) {
+                        payload = new FormData();
+                        let baseName = fileToSend.type.split('/')[0] || 'file';
+                        if (fileToSend.type === 'application/pdf') baseName = 'pdf';
+                        else if (baseName === 'application') baseName = 'file';
+
+                        let extension = 'bin';
+                        const nameParts = fileToSend.name.split('.');
+                        if (nameParts.length > 1 && nameParts[0] !== '') {
+                            extension = nameParts.pop();
+                        }
+
+                        const newFileName = `${baseName}.${extension}`;
+                        payload.append('file', fileToSend, newFileName);
+                        payload.append('message', message);
+                        payload.append('userId', userId);
+                        fetchOptions = {
+                            method: 'POST',
+                            body: payload
+                        };
+                    } else if (!isAnalysisMode && images.length > 0) {
+                        payload = new FormData();
+                        payload.append('message', message);
+                        payload.append('userId', userId);
+
+                        images.forEach((img, index) => {
+                            const file = dataURLtoFile(img.dataUrl, img.name);
+                            const baseName = 'image';
+                            
+                            let extension = 'jpeg'; // Default extension from our compression
+                            const typeParts = file.type.split('/');
+                            if (typeParts.length > 1) {
+                                extension = typeParts[1];
                             }
-                        }
+
+                            const newFileName = images.length > 1 
+                                ? `${baseName}_${index + 1}.${extension}` 
+                                : `${baseName}.${extension}`;
+                            
+                            payload.append('files', file, newFileName);
+                        });
+                        
+                        fetchOptions = {
+                            method: 'POST',
+                            body: payload
+                        };
                     } else {
-                        if (images.length > 0) {
-                            payload.images = images.map(img => img.dataUrl);
-                        }
+                        // This handles the case of a text-only message
+                        payload = { message: message, userId: userId };
+                        fetchOptions = {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        };
                     }
-                    
-                    const maxRetries = 3; 
+
+                    const maxRetries = 3;
 
                     for (let i = 0; i < maxRetries; i++) {
                         try {
-                            const response = await fetch(targetUrl, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(payload)
-                            });
+                            const response = await fetch(targetUrl, fetchOptions);
 
                             if (!response.ok) {
                                 throw new Error(`External Webhook HTTP error! Status: ${response.status}`);
@@ -1992,7 +2118,7 @@
 
                             const result = await response.json();
                             let rawText = '';
-                            
+
                             if (result && typeof result.output === 'string') {
                                 rawText = result.output;
                             } else if (result && typeof result.text === 'string') {
@@ -2000,14 +2126,13 @@
                             } else if (result && typeof result.response === 'string') {
                                 rawText = result.response;
                             } else if (result) {
-                                rawText = JSON.stringify(result, null, 2); 
+                                rawText = JSON.stringify(result, null, 2);
                             } else {
                                 rawText = 'Received empty response from the external webhook.';
                             }
 
-                            aiResponseText = rawText.replace(/\*/g, '').trim();
-
-                            break; 
+                            aiResponseText = rawText.trim();
+                            break; // Success!
 
                         } catch (error) {
                             console.error(`External Webhook attempt ${i + 1} failed:`, error);
@@ -2015,21 +2140,23 @@
                                 const delay = Math.pow(2, i) * 1000;
                                 await sleep(delay);
                             } else {
-                                aiResponseText = `Error: Could not connect to the webhook. This is likely a CORS or network issue with the webhook server. Details: ${error.message}`;
+                                aiResponseText = `Error: Could not connect to the webhook. Details: ${error.message}`;
                             }
                         }
                     }
                     
-                    loadingContainer.remove();
-
-                    await addDoc(messagesRef, { 
-                        text: aiResponseText, 
-                        role: 'ai', 
-                        createdAt: serverTimestamp() 
-                    });
+                    if (chatMessagesEl) {
+                        const loadingEl = chatMessagesEl.querySelector('.loading');
+                        if (loadingEl) loadingEl.remove();
+                    }
                     
-                    // After sending a message with a file, we should clear the pending file for the next message
-                    if (fileSentThisTime) {
+                    await addDoc(messagesRef, {
+                        text: aiResponseText,
+                        role: 'ai',
+                        createdAt: serverTimestamp()
+                    });
+
+                    if (fileSentThisTime && isAnalysisMode) {
                         pendingAnalysisFile = null;
                     }
 
@@ -2041,7 +2168,7 @@
                     const errorDiv = document.createElement('div');
                     errorDiv.className = 'chat-message-container ai max-w-2xl font-normal w-full self-start flex flex-col';
                     errorDiv.innerHTML = `<div class="chat-message-text text-base text-red-500">Error: ${error.message}</div>`;
-                    if(chatMessagesEl) chatMessagesEl.appendChild(errorDiv);
+                    if (chatMessagesEl) chatMessagesEl.appendChild(errorDiv);
                 }
             }
 
@@ -2057,6 +2184,29 @@
                     alertPlaceholder.classList.remove('opacity-100');
                     alertPlaceholder.classList.add('opacity-0', 'pointer-events-none');
                 }, 3000);
+            }
+
+            // NEW: Function to format AI responses with bolding and paragraphs
+            function applyChatFormatting(text) {
+                // 1. Escape HTML to prevent XSS attacks.
+                let safeText = text.replace(/&/g, '&amp;')
+                                   .replace(/</g, '&lt;')
+                                   .replace(/>/g, '&gt;')
+                                   .replace(/"/g, '&quot;')
+                                   .replace(/'/g, '&#039;');
+
+                // 2. Process markdown-like formatting for bolding.
+                // Replace **text** with <strong>text</strong>
+                safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                
+                // Replace "text" (as &quot;text&quot;) with <strong>text</strong>
+                safeText = safeText.replace(/&quot;(.*?)&quot;/g, '<strong>$1</strong>');
+
+                // 3. Convert newlines into paragraphs and line breaks for better readability.
+                // Split by double newlines to create paragraphs.
+                const paragraphs = safeText.split(/\n\s*\n/);
+                // For each paragraph, replace single newlines with <br> and wrap in <p>.
+                return paragraphs.map(p => `<p class="mb-3">${p.replace(/\n/g, '<br>')}</p>`).join('');
             }
 
             window.openModal = function(id, event) { 
@@ -2104,16 +2254,21 @@
                     }
                 }
 
-                const targetEl = mainContentPages[page];
-                if (!targetEl) return;
-
                 Object.values(mainContentPages).forEach(el => {
                     if (el) {
                         el.classList.add('hidden');
                         el.classList.remove('visible');
                     }
                 });
-                footerEl.classList.add('hidden');
+                
+                const targetEl = mainContentPages[page];
+                if (!targetEl) {
+                    console.error("Page not found:", page);
+                    mainContentPages['home'].classList.remove('hidden');
+                    mainContentPages['home'].classList.add('visible');
+                    footerEl.classList.remove('hidden');
+                    return;
+                }
 
                 targetEl.classList.remove('hidden');
                 
@@ -2121,6 +2276,12 @@
                     targetEl.classList.add('visible');
                 }, 10);
                 
+                if (page === 'home' || page === 'portfolio' || page === 'about') {
+                    footerEl.classList.remove('hidden');
+                } else {
+                    footerEl.classList.add('hidden');
+                }
+
                 if (page === 'chat') {
                     if (!currentChatId) {
                         const visibleSessions = chatSessionsData.filter(s => !s.title.startsWith(TEMP_TITLE_PREFIX));
@@ -2134,8 +2295,6 @@
                             }
                         }
                     } 
-                } else if (page === 'home' || page === 'portfolio') {
-                    footerEl.classList.remove('hidden');
                 }
             }
 
@@ -2149,27 +2308,9 @@
                 imageLoadingIndicator.classList.remove('hidden');
                 imageDisplayArea.innerHTML = '';
                 imageDisplayArea.appendChild(imageLoadingIndicator);
-                let generatedImageBlob = null;
-
-
-                const API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0";
                 
                 try {
-                    const response = await fetch(API_URL, {
-                        headers: { 
-                            "Authorization": `Bearer ${HF_API_TOKEN}`,
-                            "Content-Type": "application/json" 
-                        },
-                        method: "POST",
-                        body: JSON.stringify({ "inputs": prompt }),
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    generatedImageBlob = await response.blob();
-                    const imageUrl = URL.createObjectURL(generatedImageBlob);
+                    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`;
                     
                     const img = document.createElement('img');
                     img.src = imageUrl;
@@ -2217,13 +2358,13 @@
                     imageDisplayArea.appendChild(img);
                     imageDisplayArea.appendChild(controlsContainer);
 
-
                 } catch (error) {
                     console.error("Image generation error:", error);
                     showAlert("Failed to generate image. Please try again.");
                     imageLoadingIndicator.classList.add('hidden');
                 }
             }
+
 
             initializeFirebase();
 
@@ -2254,11 +2395,20 @@
             });
 
             // Chat sidebar mobile listeners
+            // MODIFIED: Sidebar toggle now correctly handles open/close on both mobile and desktop.
             if(sidebarToggleBtn) {
                 sidebarToggleBtn.addEventListener('click', () => {
-                    if (window.innerWidth < 768) { 
-                        chatSidebar.classList.remove('-translate-x-full');
-                        sidebarBackdrop.classList.remove('hidden');
+                    if (window.innerWidth < 768) { // Mobile toggle
+                        if (chatSidebar.classList.contains('-translate-x-full')) {
+                            chatSidebar.classList.remove('-translate-x-full');
+                            sidebarBackdrop.classList.remove('hidden');
+                        } else {
+                            chatSidebar.classList.add('-translate-x-full');
+                            sidebarBackdrop.classList.add('hidden');
+                        }
+                    } else { // Desktop toggle
+                        document.body.classList.toggle('sidebar-collapsed');
+                        chatSidebar.classList.toggle('collapsed');
                     }
                 });
             }
@@ -2266,14 +2416,6 @@
 
             if(sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeChatSidebar);
             if(backToChatBtn) backToChatBtn.addEventListener('click', closeChatSidebar);
-
-            // Sidebar collapse/expand listener for desktop
-            const toggleSidebar = () => {
-                document.body.classList.toggle('sidebar-collapsed');
-                chatSidebar.classList.toggle('collapsed');
-            };
-            
-            if (sidebarToggleBtn) sidebarToggleBtn.addEventListener('click', toggleSidebar);
 
             // --- New Feature Listeners ---
             if(imageUploadButton) imageUploadButton.addEventListener('click', () => imageInput.click());
@@ -2326,6 +2468,9 @@
                 pendingImages = [];
                 pendingAnalysisFile = null;
                 filePreviewContainer.classList.add('hidden');
+                filePreviewThumbnail.src = ''; // Clear src
+                filePreviewThumbnail.classList.add('hidden');
+                filePreviewIcon.classList.remove('hidden');
                 sendButton.disabled = chatInput.value.trim() === '';
             });
 
@@ -2359,6 +2504,18 @@
                 voiceButton.title = 'Voice recognition not supported in this browser.';
             }
 
+            function formatAIResponseForHTML(text) {
+                if (!text) return '';
+                // 1. Sanitize to prevent HTML injection
+                let safeText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                // 2. Format bold for **text** and "text"
+                safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                safeText = safeText.replace(/"([^"]+)"/g, '<strong>$1</strong>');
+                // 3. Format newlines for points
+                safeText = safeText.replace(/\n/g, '<br />');
+                return safeText;
+            }
+
             if(generateImageBtn) generateImageBtn.addEventListener('click', generateImage);
 
             // --- Analysis Mode Logic ---
@@ -2388,32 +2545,18 @@
                 plusFileButton.addEventListener('click', () => analysisFileInput.click());
             }
 
-            if(analysisFileInput) analysisFileInput.addEventListener('change', (e) => {
+            if(analysisFileInput) analysisFileInput.addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
 
                 if (file.type.startsWith('video/')) {
-                    if (file.size > 4 * 1024 * 1024) {
-                        showAlert("Video file is larger than 4MB. Client-side compression is not applied for large videos.");
-                    }
-                    const video = document.createElement('video');
-                    video.preload = 'metadata';
-                    video.onloadedmetadata = function() {
-                        window.URL.revokeObjectURL(video.src);
-                        if (video.duration > 10) {
-                            showAlert('Video cannot be longer than 10 seconds.');
-                            e.target.value = ''; // Reset file input
-                            return;
-                        }
-                        readFileForAnalysis(file);
-                    }
-                    video.src = URL.createObjectURL(file);
+                    readFileForAnalysis(file);
                 } else if (file.type.startsWith('image/')) {
                      if (file.size > 2 * 1024 * 1024) {
                         showAlert('Compressing image...');
                         compressImage(file, 2 * 1024 * 1024).then(dataUrl => {
-                            const newFile = { name: file.name, type: 'image/jpeg', dataUrl: dataUrl };
-                            readFileForAnalysis(newFile, true);
+                            const newFileObject = dataURLtoFile(dataUrl, file.name);
+                            readFileForAnalysis(newFileObject);
                         }).catch(err => {
                            showAlert("Image compression failed.");
                            console.error(err);
@@ -2421,40 +2564,49 @@
                      } else {
                        readFileForAnalysis(file);
                      }
+                } else if (file.type === 'application/pdf') {
+                    (async () => {
+                        let processedFile = file;
+                        // Compress if over 2MB
+                        if (file.size > 2 * 1024 * 1024) {
+                            try {
+                                processedFile = await compressPdf(file);
+                            } catch (err) {
+                                console.error("PDF compression failed:", err);
+                                showAlert("PDF compression failed. Using original file.");
+                                processedFile = file; // Fallback to original
+                            }
+                        }
+                        try {
+                            const thumbnail = await createPdfThumbnail(processedFile);
+                            readFileForAnalysis(processedFile, thumbnail);
+                        } catch (err) {
+                            console.error("PDF thumbnail generation failed:", err);
+                            showAlert("Could not generate PDF preview.");
+                            readFileForAnalysis(processedFile); // Read without thumbnail
+                        }
+                    })();
                 } else {
                     readFileForAnalysis(file);
                 }
                 e.target.value = ''; // Reset input
             });
             
-            function readFileForAnalysis(file, isAlreadyDataUrl = false) {
-                 const reader = new FileReader();
-                reader.onload = (e) => {
-                    pendingAnalysisFile = {
-                        name: file.name,
-                        type: file.type,
-                        dataUrl: e.target.result,
-                    };
-                    analysisFileSent = false;
-                    
-                    filePreviewName.textContent = file.name;
-                    filePreviewContainer.classList.remove('hidden');
-                    sendButton.disabled = false;
-                };
+            function readFileForAnalysis(file, thumbnailDataUrl = null) {
+                pendingAnalysisFile = file;
+                analysisFileSent = false;
                 
-                if (isAlreadyDataUrl) {
-                     pendingAnalysisFile = {
-                        name: file.name,
-                        type: file.type,
-                        dataUrl: file.dataUrl,
-                    };
-                    analysisFileSent = false;
-                    filePreviewName.textContent = file.name;
-                    filePreviewContainer.classList.remove('hidden');
-                    sendButton.disabled = false;
+                filePreviewName.textContent = file.name;
+                if (thumbnailDataUrl) {
+                    filePreviewThumbnail.src = thumbnailDataUrl;
+                    filePreviewThumbnail.classList.remove('hidden');
+                    filePreviewIcon.classList.add('hidden');
                 } else {
-                    reader.readAsDataURL(file);
+                    filePreviewThumbnail.classList.add('hidden');
+                    filePreviewIcon.classList.remove('hidden');
                 }
+                filePreviewContainer.classList.remove('hidden');
+                sendButton.disabled = false;
             }
 
         });
