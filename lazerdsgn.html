@@ -1,0 +1,2080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimalist Corporate Homepage</title>
+    <!-- Load Inter font from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --font-inter: 'Inter', sans-serif;
+            /* Slider Speed for Featured Projects (Horizontal) */
+            --scroll-speed-h: 40s; 
+            
+            /* UPDATED: Faster Slider Speeds for Reviews (Vertical) */
+            --scroll-speed-v1: 50s; 
+            --scroll-speed-v2: 38s; 
+            --scroll-speed-v3: 43s; 
+            
+            --scroll-height: -50%;
+        }
+        body {
+            font-family: var(--font-inter);
+            color: #1a1a1a;
+            background-color: #ffffff;
+        }
+        /* Custom styles for the large hero headline */
+        .hero-headline {
+            font-size: clamp(3rem, 8vw, 5rem);
+            line-height: 1.1;
+            font-weight: 700;
+        }
+
+        /* --- Global Page Transition Animation (NEW) --- */
+        .page-transition {
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .page-transition.visible {
+            opacity: 1;
+        }
+
+        /* --- CSS for Featured Projects Slider (Marquee Effect) --- */
+        .slider-track {
+            display: flex;
+            width: fit-content;
+            animation: scroll-left var(--scroll-speed-h) linear infinite;
+        }
+
+        @keyframes scroll-left {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        
+        .slider-item {
+            width: 320px; 
+            flex-shrink: 0;
+            margin-right: 1rem;
+        }
+        .slider-container:hover .slider-track {
+            /* Animation pause is now managed via CSS, but not on hover as requested by user */
+        }
+        /* --- End Featured Projects Slider CSS --- */
+
+        /* --- CSS for Testimonials Vertical Slider (Masonry/Marquee Effect) --- */
+        .reviews-scroll-container {
+            position: relative;
+            height: 700px; /* Fixed height for the visible viewport */
+            overflow: hidden;
+        }
+        /* Fading Mask for the top and bottom */
+        .reviews-scroll-container::before,
+        .reviews-scroll-container::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 150px; 
+            z-index: 10;
+            pointer-events: none;
+        }
+        .reviews-scroll-container::before {
+            top: 0;
+            background: linear-gradient(to bottom, #ffffff 30%, rgba(255, 255, 255, 0));
+        }
+        .reviews-scroll-container::after {
+            bottom: 0;
+            background: linear-gradient(to top, #ffffff 30%, rgba(255, 255, 255, 0));
+        }
+        
+        .review-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem; 
+            width: 100%;
+        }
+        
+        /* Define specific animations for each column to vary the speed */
+        .col-1 .review-column { animation: scroll-up-slow var(--scroll-speed-v1) linear infinite; }
+        .col-2 .review-column { animation: scroll-up-medium var(--scroll-speed-v2) linear infinite; }
+        .col-3 .review-column { animation: scroll-up-fast var(--scroll-speed-v3) linear infinite; }
+
+        @keyframes scroll-up-slow {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(var(--scroll-height)); }
+        }
+        @keyframes scroll-up-medium {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(var(--scroll-height)); }
+        }
+        @keyframes scroll-up-fast {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(var(--scroll-height)); }
+        }
+        /* --- End Testimonials Vertical Slider CSS --- */
+
+        /* --- Chat Specific Styles (MODIFIED) --- */
+        .chat-message-container {
+            max-width: 80%;
+            word-wrap: break-word;
+            padding: 0; /* Remove padding from outer container */
+            /* Removed align-self: flex-start default */
+        }
+        
+        .chat-message-text {
+            padding: 1rem;
+            /* Default: no shadow */
+        }
+
+        /* User Message Styling (MODIFIED: Light Grey Background, Rounded Corners, Right Alignment) */
+        .chat-message-container.user {
+            align-self: flex-end;
+            /* Ensures container is on the right. Sub-elements are aligned right via flex-col items-end */
+        }
+        .chat-message-container.user .chat-message-text {
+            background-color: #f3f4f6; /* Light gray background */
+            color: #1a1a1a;
+            box-shadow: none; /* Removed box shadow */
+            border-radius: 1rem; /* Fully rounded corners */
+            font-weight: 500;
+        }
+        /* AI Message Styling (MODIFIED: Clean Text look) */
+        .chat-message-container.ai {
+            align-self: flex-start;
+        }
+        .chat-message-container.ai .chat-message-text {
+            /* Remove background/shadow for "Gemini" look */
+            background-color: transparent; 
+            color: #1a1a1a;
+            box-shadow: none; 
+            padding: 0 0 0.25rem 0; /* Minimal padding */
+            font-weight: 500;
+        }
+        
+        /* AI Response Fade-in Animation */
+        .ai-text-content {
+            opacity: 0;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Reset for the loading state to keep it visible */
+        .chat-message-container.ai.loading .chat-message-text {
+            font-style: italic;
+            color: #9ca3af; /* gray-400 */
+        }
+
+
+        /* Action Icons Styling */
+        .chat-actions {
+            display: flex;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #6b7280; /* gray-500 */
+            padding: 0.5rem 0 0 0; 
+            /* Align actions to the correct side */
+        }
+        /* User messages action bar MUST align right (right corner below message) */
+        .chat-message-container.user .chat-actions {
+             justify-content: flex-end;
+             padding-right: 0.25rem; /* Small offset for user actions */
+        }
+        /* AI messages action bar should align left */
+        .chat-message-container.ai .chat-actions {
+             justify-content: flex-start;
+             padding-left: 0.25rem; /* Small offset for AI actions */
+        }
+        .action-button {
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            transition: color 0.15s;
+        }
+        .action-button:hover {
+            color: #000;
+        }
+        .action-button.copy {
+            margin-left: 0.5rem; /* Separator for buttons */
+        }
+        .action-button.feedback {
+            margin-left: 0.5rem;
+        }
+        .action-button.feedback.clicked {
+            color: #000;
+        }
+        /* Remove specific copy-user rule as actions are now consistently below */
+
+        /* Set the overall chat container height to full screen minus the header height */
+        #chat-page {
+            height: calc(100vh - 68px); 
+            min-height: 500px; /* Ensure a minimum height for usability */
+            opacity: 0; /* Start hidden for JS animation */
+            transition: opacity 0.3s ease-in-out;
+        }
+        #chat-page.visible {
+            opacity: 1;
+        }
+
+        /* Sidebar and Modal styles remain unchanged */
+
+        .session-item-container {
+            position: relative;
+            padding: 0.3rem 0; /* Reduced vertical padding */
+            margin-bottom: 0.25rem; /* Reduced bottom margin */
+            color: #1a1a1a;
+            font-weight: 400; 
+            cursor: pointer;
+            transition: font-weight 0.2s;
+            /* Added for flex layout */
+            display: flex;
+            align-items: center;
+        }
+        /* Only change font weight on hover/active */
+        .session-item-container:hover, .session-item-container.active {
+            font-weight: 500;
+        }
+        
+        .session-text {
+            /* Modified for flex layout and inline editing */
+            flex-grow: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 2px 6px;
+            border-radius: 4px;
+            outline: none;
+            border: 1px solid transparent;
+        }
+        .session-text:focus {
+            cursor: text;
+            background-color: #f9fafb; /* very light gray */
+            border: 1px solid #d1d5db; /* gray-300 */
+        }
+        /* Custom hover/active states for the whole container */
+        .session-item-container:hover .session-actions-menu,
+        .session-item-container.active .session-actions-menu {
+            opacity: 1;
+        }
+
+        .chat-sidebar-header {
+            font-weight: 500; 
+        }
+        /* New Chat Button Styling */
+        #new-chat-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background-color: #000;
+            color: #fff;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        #new-chat-btn:hover {
+            background-color: #333;
+        }
+
+        /* Sidebar Action Menu Styling */
+        .session-actions-menu {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            background-color: #f8f8f8; /* slightly lighter than sidebar bg */
+            border-radius: 0.5rem;
+            opacity: 0;
+            transition: opacity 0.15s ease-in-out;
+            z-index: 5;
+        }
+        .session-actions-menu button {
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            color: #6b7280;
+            transition: color 0.15s, background-color 0.15s;
+        }
+        .session-actions-menu button:hover {
+            color: #1a1a1a;
+            background-color: #e5e7eb;
+        }
+
+        /* --- Sidebar Collapse Styles --- */
+        #chat-sidebar.collapsed {
+            width: 0;
+            padding: 0;
+            border: none;
+            overflow: hidden;
+        }
+        #collapsed-new-chat-btn {
+            display: none;
+        }
+        body.sidebar-collapsed #collapsed-new-chat-btn {
+            display: inline-flex;
+        }
+        body.sidebar-collapsed #sidebar-toggle-btn svg {
+            transform: rotate(180deg);
+        }
+
+        #voice-button.recording {
+            color: #ef4444; /* red-500 */
+        }
+
+        /* --- Modal Styles --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50; /* Above all content */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0s linear 0.3s;
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            max-width: 90%;
+            width: 400px;
+            transform: translateY(-50px);
+            transition: transform 0.3s ease-in-out;
+        }
+        .modal-overlay.open .modal-content {
+            transform: translateY(0);
+        }
+
+    </style>
+</head>
+<body class="antialiased">
+    <input type="file" id="image-input" accept="image/*" class="hidden">
+    
+    <!-- SVG Icon Definitions (Hidden) -->
+    <svg style="display: none;">
+        <symbol id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </symbol>
+        <!-- NEW: Heart Icon for Good Response -->
+        <symbol id="icon-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+        </symbol>
+        <!-- NEW: Flag Icon for Bad Response -->
+        <symbol id="icon-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line>
+        </symbol>
+        <!-- Ellipsis (3 dots) for Menu -->
+        <symbol id="icon-ellipsis" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <circle cx="12" cy="12" r="1.5"/><circle cx="6" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/>
+        </symbol>
+        <!-- Rename/Edit Icon (Pencil) -->
+        <symbol id="icon-rename" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+        </symbol>
+        <!-- Trash Icon -->
+        <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </symbol>
+        <!-- Sidebar Toggle Icon -->
+        <symbol id="icon-sidebar-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="9" y1="3" x2="9" y2="21"></line>
+            <path d="m13 16-3-4 3-4"></path>
+        </symbol>
+        <!-- Plus Square Icon -->
+        <symbol id="icon-plus-square" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line>
+        </symbol>
+        <!-- Arrow Left Icon -->
+        <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </symbol>
+        <!-- Microphone Icon -->
+        <symbol id="icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+        </symbol>
+        <!-- Image Icon -->
+        <symbol id="icon-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+        </symbol>
+        <!-- Eye Icon -->
+        <symbol id="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+        </symbol>
+        <!-- Eye Off Icon -->
+        <symbol id="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+        </symbol>
+    </svg>
+
+    <!-- Header / Navigation (Visible on both pages) -->
+    <header id="main-header" class="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center h-17">
+            <div class="text-2xl font-bold tracking-tight">
+                <a href="#" class="text-black" onclick="navigateTo('home', event)">LazerDsgn.</a>
+            </div>
+            <nav class="hidden md:flex space-x-8 text-sm font-medium text-gray-700 items-center">
+                <a href="#" class="hover:text-black" onclick="navigateTo('home', event)">Home</a>
+                <a href="#" class="hover:text-black" onclick="navigateTo('portfolio', event)">Portfolio</a>
+                <a href="#" class="hover:text-black">Studio</a>
+                <!-- Chat link -->
+                <a href="#" class="hover:text-black" onclick="navigateTo('chat', event)">Chat</a>
+                <a href="#" class="hover:text-black" onclick="navigateTo('image-gen', event)">Image Gen</a>
+                
+                <!-- Login/Logout Link Container -->
+                <div id="auth-link-container">
+                    <a href="#" class="font-medium text-black border border-gray-300 rounded-full px-4 py-1.5 hover:bg-gray-50 transition" onclick="openModal('login-modal', event)">Login</a>
+                </div>
+            </nav>
+            <button id="mobile-menu-button" class="md:hidden p-2 rounded-full hover:bg-gray-50">
+                <!-- Hamburger Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mobile Menu (Initially Hidden) -->
+    <div id="mobile-menu" class="fixed inset-0 bg-white z-50 transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden">
+        <div class="flex justify-between items-center p-4 border-b border-gray-100">
+            <div class="text-2xl font-bold tracking-tight">
+                <a href="#" class="text-black" onclick="navigateTo('home', event); closeMobileMenu();">LazerDsgn.</a>
+            </div>
+            <button id="close-mobile-menu-button" class="p-2">
+                <!-- Close Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <nav class="flex flex-col space-y-6 p-6 text-lg font-medium text-gray-700">
+            <a href="#" class="hover:text-black" onclick="navigateTo('home', event); closeMobileMenu();">Home</a>
+            <a href="#" class="hover:text-black" onclick="navigateTo('portfolio', event); closeMobileMenu();">Portfolio</a>
+            <a href="#" class="hover:text-black" onclick="closeMobileMenu();">Studio</a>
+            <a href="#" class="hover:text-black" onclick="navigateTo('chat', event); closeMobileMenu();">Chat</a>
+            <a href="#" class="hover:text-black" onclick="navigateTo('image-gen', event); closeMobileMenu();">Image Gen</a>
+            <div id="mobile-auth-link-container" class="pt-4">
+                 <a href="#" class="font-medium text-black border border-gray-300 rounded-full px-5 py-2 hover:bg-gray-50 transition" onclick="openModal('login-modal', event); closeMobileMenu();">Login</a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Homepage Content (Visible by default) -->
+    <main id="homepage-content" class="page-transition visible">
+        <!-- 2. Hero Section (Image 2) -->
+        <section id="hero" class="py-24 md:py-40 text-center">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Launch Article Link -->
+                <a href="#" class="inline-flex items-center text-sm font-medium text-gray-800 bg-gray-50 px-4 py-2 rounded-full mb-8 transition hover:shadow-lg">
+                    See our latest Brand Review
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                </a>
+                
+                <!-- Headline -->
+                <h1 class="hero-headline tracking-tighter text-black mb-6">
+                    Design that makes <br class="hidden sm:block"> your brand pop.
+                </h1>
+
+                <!-- Subtext -->
+                <p class="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10">
+                    We specialize in sharp, modern graphic design and brand strategy. Stop settling for mediocre visuals and let LazerDsgn create an identity that genuinely connects with your audience.
+                </p>
+
+                <!-- CTA Buttons -->
+                <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                    <!-- UPDATED: Button now navigates to the Portfolio page -->
+                    <button class="inline-flex items-center justify-center px-8 py-3 border border-gray-300 text-base font-medium rounded-xl text-black bg-white shadow-sm hover:bg-gray-50 transition" onclick="navigateTo('portfolio', event)">
+                        View Projects
+                        <!-- Briefcase Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.5 23.5 0 0112 15c-3.185 0-6.279-.83-9-2.245m18 0A23.5 23.5 0 0012 9a23.5 23.5 0 00-9 2.245m18 0V12a3.5 3.5 0 01-3.5 3.5h-5A3.5 3.5 0 018 12v-.745m5-8.255h-2a3.5 3.5 0 00-3.5 3.5v7.5A3.5 3.5 0 0012 21h5.5a3.5 3.5 0 003.5-3.5v-7.5A3.5 3.5 0 0017 4.5z" />
+                        </svg>
+                    </button>
+                    <!-- UPDATED: Sign up button now opens the modal -->
+                    <button class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-black shadow-lg hover:bg-gray-800 transition" onclick="openModal('signup-modal', event)">
+                        Start Your Project
+                        <!-- Arrow Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 1. Featured Projects Section (Image 1) - White/Black Theme with Slider -->
+        <section id="projects" class="py-24 md:py-32 bg-white text-black">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-8">
+                    Curating high-impact visual identities.
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mb-16">
+                    LazerDsgn partners with modern brands to develop, accelerate, and invest in integrated portfolios across print, web, and experiential design.
+                </p>
+            </div>
+
+            <!-- Infinite Project Slider Container -->
+            <div class="slider-container overflow-hidden relative">
+                <div class="slider-track">
+                    
+                    <!-- Project Card Content (Repeated twice for seamless loop) -->
+                    <!-- Set 1 -->
+                    <a href="#" class="slider-item inline-block relative aspect-[3/4] overflow-hidden rounded-lg shadow-xl transform transition-transform duration-300 hover:scale-[1.02]">
+                        <img src="https://placehold.co/400x533/F3F4F6/1F2937?text=Brand+Refresh" alt="Brand Refresh" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Project Nova.</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Visual Identity & Strategy.</p></div>
+                    </a>
+                    <a href="#" class="slider-item inline-block relative aspect-[3/4] overflow-hidden rounded-lg shadow-xl transform transition-transform duration-300 hover:scale-[1.02]">
+                        <img src="https://placehold.co/400x533/000000/ffffff?text=Web+Design" alt="Web Design" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Studio 47.</h3><p class="text-sm text-gray-300 mt-1">UX/UI for a global SaaS platform.</p></div>
+                    </a>
+                    <a href="#" class="slider-item inline-block relative aspect-[3/4] overflow-hidden rounded-lg shadow-xl transform transition-transform duration-300 hover:scale-[1.02]">
+                        <img src="https://placehold.co/400x533/ffffff/000000?text=Packaging+Design" alt="Packaging Design" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Vector Labs.</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Product Packaging and Print.</p></div>
+                    </a>
+                    <a href="#" class="slider-item inline-block relative aspect-[3/4] overflow-hidden rounded-lg shadow-xl transform transition-transform duration-300 hover:scale-[1.02]">
+                        <img src="https://placehold.co/400x533/808080/000000?text=Advertising+Campaign" alt="Advertising Campaign" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Pulse.</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Digital Campaign Creative.</p></div>
+                    </a>
+
+                    <!-- Set 2 (Duplicate) -->
+                    <a href="#" class="slider-item inline-block relative aspect-[3/4] overflow-hidden rounded-lg shadow-xl transform transition-transform duration-300 hover:scale-[1.02]">
+                        <img src="https://placehold.co/400x533/F3F4F6/1F2937?text=Brand+Refresh" alt="Brand Refresh" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Project Nova.</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Visual Identity & Strategy.</p></div>
+                    </a>
+                    <a href="#" class="slider-item inline-block relative aspect-[3/4] overflow-hidden rounded-lg shadow-xl transform transition-transform duration-300 hover:scale-[1.02]">
+                        <img src="https://placehold.co/400x533/000000/ffffff?text=Web+Design" alt="Web Design" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Studio 47.</h3><p class="text-sm text-gray-300 mt-1">UX/UI for a global SaaS platform.</p></div>
+                    </a>
+                    <a href="#" class="slider-item inline-block relative aspect-[3/4] overflow-hidden rounded-lg shadow-xl transform transition-transform duration-300 hover:scale-[1.02]">
+                        <img src="https://placehold.co/400x533/ffffff/000000?text=Packaging+Design" alt="Packaging Design" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Vector Labs.</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Product Packaging and Print.</p></div>
+                    </a>
+                    <a href="#" class="slider-item inline-block relative aspect-[3/4] overflow-hidden rounded-lg shadow-xl transform transition-transform duration-300 hover:scale-[1.02] mr-4">
+                        <img src="https://placehold.co/400x533/808080/000000?text=Advertising+Campaign" alt="Advertising Campaign" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-75">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        <div class="absolute bottom-4 left-4"><h3 class="text-2xl font-semibold text-white">Pulse.</h3><p class="text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">Digital Campaign Creative.</p></div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Testimonials Section (Image 4) - Now with Vertical Infinite Slider -->
+        <section id="testimonials" class="py-24 md:py-32 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <span class="text-sm font-medium text-gray-600 bg-gray-50 px-3 py-1.5 rounded-full">Client Success</span>
+                    <h2 class="text-4xl md:text-5xl font-extrabold tracking-tighter text-black mt-4 mb-3">
+                        What our clients say
+                    </h2>
+                    <p class="text-lg text-gray-600">
+                        Read success stories from brands we've helped elevate.
+                    </p>
+                </div>
+
+                <!-- Infinite Review Slider Container -->
+                <div class="reviews-scroll-container">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 h-full">
+
+                        <!-- Column 1 (Slow Speed - 50s) -->
+                        <div class="col-1 overflow-hidden">
+                            <div class="review-column">
+                                <!-- Review Card 1 (Original) -->
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">LazerDsgn guided our brand through a complex re-design process, providing ongoing expertise and ensuring our final look was pitch perfect.</p>
+                                    <div class="flex items-center"><img src="https://placehold.co/40x40/9CA3AF/ffffff?text=S" alt="Saman Malik" class="w-10 h-10 rounded-full object-cover"><div class="ml-4"><p class="font-semibold text-sm text-black">Saman Malik</p><p class="text-xs text-gray-500">Brand Director</p></div></div>
+                                </div>
+                                <!-- Review Card 4 (Original) -->
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">The new visual system LazerDsgn delivered instantly elevated our presence in a crowded market. Their process is smooth and highly collaborative.</p>
+                                    <div class="flex items-center"><div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">A</div><div class="ml-4"><p class="font-semibold text-sm text-black">Ahmed Khan</p><p class="text-xs text-gray-500">Marketing Lead</p></div></div>
+                                </div>
+                                <!-- Review Card 3 (Original) -->
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">Our website conversions doubled after the UI/UX overhaul. LazerDsgn's focus on user experience married with beautiful design is unmatched.</p>
+                                    <div class="flex items-center"><img src="https://placehold.co/40x40/1F2937/ffffff?text=H" alt="Hassan Ali" class="w-10 h-10 rounded-full object-cover"><div class="ml-4"><p class="font-semibold text-sm text-black">Hassan Ali</p><p class="text-xs text-gray-500">Digital Strategist</p></div></div>
+                                </div>
+                                <!-- DUPLICATION START -->
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">LazerDsgn guided our brand through a complex re-design process, providing ongoing expertise and ensuring our final look was pitch perfect.</p>
+                                    <div class="flex items-center"><img src="https://placehold.co/40x40/9CA3AF/ffffff?text=S" alt="Saman Malik" class="w-10 h-10 rounded-full object-cover"><div class="ml-4"><p class="font-semibold text-sm text-black">Saman Malik</p><p class="text-xs text-gray-500">Brand Director</p></div></div>
+                                </div>
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">The new visual system LazerDsgn delivered instantly elevated our presence in a crowded market. Their process is smooth and highly collaborative.</p>
+                                    <div class="flex items-center"><div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">A</div><div class="ml-4"><p class="font-semibold text-sm text-black">Ahmed Khan</p><p class="text-xs text-gray-500">Marketing Lead</p></div></div>
+                                </div>
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">Our website conversions doubled after the UI/UX overhaul. LazerDsgn's focus on user experience married with beautiful design is unmatched.</p>
+                                    <div class="flex items-center"><img src="https://placehold.co/40x40/1F2937/ffffff?text=H" alt="Hassan Ali" class="w-10 h-10 rounded-full object-cover"><div class="ml-4"><p class="font-semibold text-sm text-black">Hassan Ali</p><p class="text-xs text-gray-500">Digital Strategist</p></div></div>
+                                </div>
+                                <!-- DUPLICATION END -->
+                            </div>
+                        </div>
+
+                        <!-- Column 2 (Medium Speed - 38s) -->
+                        <div class="col-2 hidden md:block overflow-hidden">
+                            <div class="review-column">
+                                <!-- Review Card 2 (Original) -->
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">The robust design consultation and fast delivery from LazerDsgn have streamlined our production workflow, making our internal marketing significantly more efficient.</p>
+                                    <div class="flex items-center"><img src="https://placehold.co/40x40/D1D5DB/ffffff?text=Z" alt="Zainab Hussain" class="w-10 h-10 rounded-full object-cover"><div class="ml-4"><p class="font-semibold text-sm text-black">Zainab Hussain</p><p class="text-xs text-gray-500">Creative Manager</p></div></div>
+                                </div>
+                                <!-- Review Card 5 (Original) -->
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">The execution of our campaign assets exceeded expectations. Every touchpoint felt integrated and premium, improving overall brand perception.</p>
+                                    <div class="flex items-center"><div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">M</div><div class="ml-4"><p class="font-semibold text-sm text-black">Maria Rodriguez</p><p class="text-xs text-gray-500">Founder, Small Retail</p></div></div>
+                                </div>
+                                <!-- Review Card 1 (Repeat) -->
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">LazerDsgn guided our brand through a complex re-design process, providing ongoing expertise and ensuring our final look was pitch perfect.</p>
+                                    <div class="flex items-center"><img src="https://placehold.co/40x40/9CA3AF/ffffff?text=S" alt="Saman Malik" class="w-10 h-10 rounded-full object-cover"><div class="ml-4"><p class="font-semibold text-sm text-black">Saman Malik</p><p class="text-xs text-gray-500">Brand Director</p></div></div>
+                                </div>
+                                <!-- DUPLICATION START -->
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">The robust design consultation and fast delivery from LazerDsgn have streamlined our production workflow, making our internal marketing significantly more efficient.</p>
+                                    <div class="flex items-center"><img src="https://placehold.co/40x40/D1D5DB/ffffff?text=Z" alt="Zainab Hussain" class="w-10 h-10 rounded-full object-cover"><div class="ml-4"><p class="font-semibold text-sm text-black">Zainab Hussain</p><p class="text-xs text-gray-500">Creative Manager</p></div></div>
+                                </div>
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">The execution of our campaign assets exceeded expectations. Every touchpoint felt integrated and premium, improving overall brand perception.</p>
+                                    <div class="flex items-center"><div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">M</div><div class="ml-4"><p class="font-semibold text-sm text-black">Maria Rodriguez</p><p class="text-xs text-gray-500">Founder, Small Retail</p></div></div>
+                                </div>
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">LazerDsgn guided our brand through a complex re-design process, providing ongoing expertise and ensuring our final look was pitch perfect.</p>
+                                    <div class="flex items-center"><img src="https://placehold.co/40x40/9CA3AF/ffffff?text=S" alt="Saman Malik" class="w-10 h-10 rounded-full object-cover"><div class="ml-4"><p class="font-semibold text-sm text-black">Saman Malik</p><p class="text-xs text-gray-500">Brand Director</p></div></div>
+                                </div>
+                                <!-- DUPLICATION END -->
+                            </div>
+                        </div>
+
+                        <!-- Column 3 (Fast Speed - 43s) -->
+                        <div class="col-3 hidden lg:block overflow-hidden">
+                            <div class="review-column">
+                                <!-- Review Card 3 (Original) -->
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">Our website conversions doubled after the UI/UX overhaul. LazerDsgn's focus on user experience married with beautiful design is unmatched.</p>
+                                    <div class="flex items-center"><img src="https://placehold.co/40x40/1F2937/ffffff?text=H" alt="Hassan Ali" class="w-10 h-10 rounded-full object-cover"><div class="ml-4"><p class="font-semibold text-sm text-black">Hassan Ali</p><p class="text-xs text-gray-500">Digital Strategist</p></div></div>
+                                </div>
+                                <!-- Review Card 4 (Repeat) -->
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">The new visual system LazerDsgn delivered instantly elevated our presence in a crowded market. Their process is smooth and highly collaborative.</p>
+                                    <div class="flex items-center"><div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">A</div><div class="ml-4"><p class="font-semibold text-sm text-black">Ahmed Khan</p><p class="text-xs text-gray-500">Marketing Lead</p></div></div>
+                                </div>
+                                <!-- Review Card 2 (Repeat) -->
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">The robust design consultation and fast delivery from LazerDsgn have streamlined our production workflow, making our internal marketing significantly more efficient.</p>
+                                    <div class="flex items-center"><img src="https://placehold.co/40x40/D1D5DB/ffffff?text=Z" alt="Zainab Hussain" class="w-10 h-10 rounded-full object-cover"><div class="ml-4"><p class="font-semibold text-sm text-black">Zainab Hussain</p><p class="text-xs text-gray-500">Creative Manager</p></div></div>
+                                </div>
+                                <!-- Review Card 5 (Repeat) -->
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">The execution of our campaign assets exceeded expectations. Every touchpoint felt integrated and premium, improving overall brand perception.</p>
+                                    <div class="flex items-center"><div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">M</div><div class="ml-4"><p class="font-semibold text-sm text-black">Maria Rodriguez</p><p class="text-xs text-gray-500">Founder, Small Retail</p></div></div>
+                                </div>
+                                <!-- DUPLICATION START -->
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">Our website conversions doubled after the UI/UX overhaul. LazerDsgn's focus on user experience married with beautiful design is unmatched.</p>
+                                    <div class="flex items-center"><img src="https://placehold.co/40x40/1F2937/ffffff?text=H" alt="Hassan Ali" class="w-10 h-10 rounded-full object-cover"><div class="ml-4"><p class="font-semibold text-sm text-black">Hassan Ali</p><p class="text-xs text-gray-500">Digital Strategist</p></div></div>
+                                </div>
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">The new visual system LazerDsgn delivered instantly elevated our presence in a crowded market. Their process is smooth and highly collaborative.</p>
+                                    <div class="flex items-center"><div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">A</div><div class="ml-4"><p class="font-semibold text-sm text-black">Ahmed Khan</p><p class="text-xs text-gray-500">Marketing Lead</p></div></div>
+                                </div>
+                                <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">The robust design consultation and fast delivery from LazerDsgn have streamlined our production workflow, making our internal marketing significantly more efficient.</p>
+                                    <div class="flex items-center"><img src="https://placehold.co/40x40/D1D5DB/ffffff?text=Z" alt="Zainab Hussain" class="w-10 h-10 rounded-full object-cover"><div class="ml-4"><p class="font-semibold text-sm text-black">Zainab Hussain</p><p class="text-xs text-gray-500">Creative Manager</p></div></div>
+                                </div>
+                                 <div class="p-8 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    <p class="text-gray-700 text-lg mb-6">The execution of our campaign assets exceeded expectations. Every touchpoint felt integrated and premium, improving overall brand perception.</p>
+                                    <div class="flex items-center"><div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">M</div><div class="ml-4"><p class="font-semibold text-sm text-black">Maria Rodriguez</p><p class="text-xs text-gray-500">Founder, Small Retail</p></div></div>
+                                </div>
+                                <!-- DUPLICATION END -->
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <!-- End Infinite Review Slider Container -->
+
+            </div>
+        </section>
+    </main>
+
+    <!-- Chat Page (Initially Hidden) -->
+    <main id="chat-page" class="hidden bg-white w-full overflow-hidden flex">
+        <div class="flex h-full w-full">
+            
+            <!-- Sidebar (Chat History) -->
+            <div id="chat-sidebar" class="fixed top-[68px] bottom-0 left-0 h-auto z-40 transform -translate-x-full md:relative md:top-auto md:translate-x-0 transition-all duration-300 ease-in-out bg-gray-50 border-r border-gray-200 flex flex-col w-full sm:w-72">
+                
+                <!-- Sidebar Header/New Chat Button -->
+                <div class="p-4 flex-shrink-0 border-b border-gray-200">
+                    <button id="new-chat-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                        New Chat
+                    </button>
+                </div>
+                
+                <!-- Chat History Container -->
+                <div id="chat-history" class="flex-1 overflow-y-auto px-4 pt-2">
+                    <!-- Chat links dynamically added here by JS -->
+                </div>
+                
+                <!-- Sidebar Footer -->
+                <div class="p-4 border-t border-gray-200 text-sm text-gray-600 flex-shrink-0">
+                    <p id="user-status-text" class="mb-2 truncate">Connecting...</p>
+                     <div class="flex items-center justify-between">
+                         <button id="back-to-chat-btn" class="flex items-center space-x-2 text-gray-600 hover:text-black md:hidden">
+                            <svg class="w-4 h-4"><use href="#icon-arrow-left"></use></svg>
+                            <span>Back to Chat</span>
+                         </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Chat Content Area -->
+            <div id="main-chat-area" class="flex-1 flex flex-col overflow-hidden h-full">
+                
+                <!-- Chat Header/Title -->
+                <div id="chat-header" class="p-4 border-b border-gray-200 flex items-center justify-between bg-white shadow-sm z-10 flex-shrink-0">
+                    <div class="flex items-center">
+                         <button id="sidebar-toggle-btn" class="p-2 rounded-full hover:bg-gray-100">
+                           <svg class="w-6 h-6 transition-transform"><use href="#icon-sidebar-toggle"></use></svg>
+                        </button>
+                        <button id="collapsed-new-chat-btn" class="hidden p-2 rounded-full hover:bg-gray-100 ml-2">
+                             <svg class="w-6 h-6"><use href="#icon-plus-square"></use></svg>
+                        </button>
+                    </div>
+                     <div class="flex items-center">
+                        <button id="mobile-new-chat-button" class="md:hidden p-2 rounded-full hover:bg-gray-100">
+                             <svg class="w-6 h-6"><use href="#icon-plus-square"></use></svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Message Display Area -->
+                <div id="chat-messages" class="flex-1 overflow-y-auto p-6 md:p-10 flex flex-col space-y-6">
+                    <!-- Messages will be injected here -->
+                    <div id="default-message" class="text-center text-gray-500 italic pt-20">
+                        Start a new chat or click a session on the left to continue a conversation.
+                    </div>
+                </div>
+
+                <div id="image-preview-container" class="hidden p-4 md:px-8 flex justify-center">
+                    <div class="relative">
+                        <img id="image-preview-thumb" src="" class="max-h-24 rounded-lg shadow-md">
+                        <button id="remove-image-preview-btn" class="absolute top-0 right-0 -mt-2 -mr-2 bg-red-500 text-white rounded-full p-1 leading-none">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Input Area -->
+                <div class="p-4 md:p-8 border-t border-gray-200 flex justify-center flex-shrink-0">
+                    <div class="w-full max-w-3xl flex items-center bg-gray-100 rounded-2xl shadow-sm overflow-hidden p-2 space-x-2">
+                        <!-- Image Upload Button -->
+                        <button id="image-upload-button" title="Upload Image" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 hover:text-black transition">
+                            <svg class="w-6 h-6"><use href="#icon-image"></use></svg>
+                        </button>
+                        <!-- Voice Input Button -->
+                        <button id="voice-button" title="Use Voice" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 hover:text-black transition">
+                            <svg class="w-6 h-6"><use href="#icon-mic"></use></svg>
+                        </button>
+                        <input type="text" id="chat-input" placeholder="Ask a question..." class="flex-1 p-2 text-base bg-transparent border-none focus:ring-0 focus:outline-none placeholder-gray-500">
+                        <button id="send-button" class="bg-black text-white p-3 rounded-xl hover:bg-gray-800 transition disabled:opacity-50" disabled>
+                            <!-- Send Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </main>
+    <!-- End Chat Page -->
+    <!-- Sidebar Backdrop for Mobile Chat -->
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+
+    <!-- NEW: Image Gen Page -->
+    <main id="image-gen-page" class="hidden page-transition">
+        <section class="py-12 md:py-20">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                 <h1 class="text-4xl md:text-5xl font-extrabold tracking-tighter text-black mb-4">
+                    AI Image Generation
+                </h1>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
+                    Describe the image you want to create. Be as specific as possible for the best results.
+                </p>
+
+                <div class="max-w-2xl mx-auto">
+                    <div class="flex items-center bg-gray-100 rounded-2xl shadow-sm overflow-hidden p-2 space-x-2">
+                         <input type="text" id="image-prompt-input" placeholder="e.g., A photorealistic astronaut riding a horse on Mars" class="flex-1 p-3 text-base bg-transparent border-none focus:ring-0 focus:outline-none placeholder-gray-500">
+                        <button id="generate-image-btn" class="bg-black text-white p-3 rounded-xl hover:bg-gray-800 transition">
+                            Generate
+                        </button>
+                    </div>
+                </div>
+
+                <div id="image-display-area" class="mt-12 flex justify-center items-center min-h-[300px]">
+                    <div id="image-loading-indicator" class="hidden flex flex-col items-center justify-center">
+                        <div class="w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center animate-pulse">
+                            <svg class="animate-spin h-8 w-8 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                        <p class="mt-4 text-gray-500">Generating your masterpiece...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 3. Footer (Image 3) -->
+    <footer id="footer" class="bg-white border-t border-gray-100 pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-12 pb-16">
+                
+                <!-- Stay Connected / Newsletter -->
+                <div class="col-span-2 md:col-span-1">
+                    <h3 class="text-3xl font-extrabold tracking-tighter text-black mb-4">Stay <br> Connected</h3>
+                    <p class="text-gray-600 text-sm mb-4">
+                        Join our newsletter for the latest updates and exclusive offers from LazerDsgn.
+                    </p>
+                    <div class="flex items-center border border-gray-300 rounded-xl overflow-hidden p-1 bg-white max-w-xs">
+                        <input type="email" placeholder="Enter your email" class="w-full px-3 py-2 text-sm border-none focus:ring-0 focus:outline-none placeholder-gray-500">
+                        <button class="bg-black text-white p-2 rounded-lg hover:bg-gray-800 transition">
+                            <!-- Send Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div>
+                    <h4 class="font-semibold text-black mb-4">Quick Links</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="#" class="hover:text-black transition" onclick="navigateTo('home', event)">Home</a></li>
+                        <li><a href="#" class="hover:text-black transition" onclick="navigateTo('portfolio', event)">Portfolio</a></li>
+                        <li><a href="#" class="hover:text-black transition">Studio</a></li>
+                        <li><a href="#" class="hover:text-black transition">Services</a></li>
+                        <li><a href="#" class="hover:text-black transition">Pricing</a></li>
+                        <!-- Chat link updated -->
+                        <li><a href="#" class="hover:text-black transition" onclick="navigateTo('chat', event)">Chat</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact Us -->
+                <div>
+                    <h4 class="font-semibold text-black mb-4">Get in Touch</h4>
+                    <address class="space-y-2 text-sm not-italic text-gray-600">
+                        <p>101 Design Hub</p>
+                        <p>Creative City, CC 90210</p>
+                        <p>Phone: (555) 789-0123</p>
+                        <p>Email: <a href="mailto:hello@lazerdsgn.com" class="hover:text-black transition">hello@lazerdsgn.com</a></p>
+                    </address>
+                </div>
+
+                <!-- Follow Us / Dark Mode Toggle -->
+                <div class="md:text-left">
+                    <h4 class="font-semibold text-black mb-4">Follow Us</h4>
+                    <div class="flex space-x-3 mb-6">
+                        <!-- Social Icons -->
+                        <a href="#" class="p-2 border border-gray-300 rounded-full text-gray-600 hover:text-black hover:border-black transition">
+                            <!-- Facebook Icon (using simple SVG) -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm3 8h-2v4h2v6h-3v-6h-2V7h2V5h3v2h2v3z"/></svg>
+                        </a>
+                        <a href="#" class="p-2 border border-gray-300 rounded-full text-gray-600 hover:text-black hover:border-black transition">
+                            <!-- Twitter Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm3.333 7.824c.002.046.002.091.002.138 0 1.408-.52 2.76-1.554 3.754-1.034.995-2.39.995-3.424 0a4.846 4.846 0 01-1.554-3.754c.002-.047.002-.092.002-.138a4.846 4.846 0 011.554-3.754c1.034-.995 2.39-.995 3.424 0a4.846 4.846 0 011.554 3.754zM12 6a6 6 0 100 12 6 6 0 000-12z"/></svg>
+                        </a>
+                        <a href="#" class="p-2 border border-gray-300 rounded-full text-gray-600 hover:text-black hover:border-black transition">
+                            <!-- Instagram Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm3.178 4.75a.5.5 0 01.5.5v7.5a.5.5 0 01-.5.5H8.822a.5.5 0 01-.5-.5V7.25a.5.5 0 01.5-.5h6.356zM12 8a4 4 0 100 8 4 4 0 000-8zm0 1.5a2.5 2.5 0 110 5 2.5 2.5 0 010-5z"/></svg>
+                        </a>
+                        <a href="#" class="p-2 border border-gray-300 rounded-full text-gray-600 hover:text-black hover:border-black transition">
+                            <!-- LinkedIn Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm-2 16H8V9h2v9zm-1-10c-1.104 0-2-.896-2-2s.896-2 2-2 2 .896 2 2-.896 2-2 2zm7 10h-2v-4.5c0-.966-.79-1.5-1.5-1.5-.71 0-1.5.534-1.5 1.5V18h-2V9h2v1.442c.49-.692 1.258-1.442 2.5-1.442 1.65 0 3 1.35 3 3V18z"/></svg>
+                        </a>
+                    </div>
+                    
+                    <!-- Aesthetic Dark Mode Toggle -->
+                    <div class="flex items-center space-x-2">
+                        <!-- Sun Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                        
+                        <!-- Toggle Switch (Aesthetic representation) -->
+                        <div class="relative w-12 h-6 flex items-center bg-gray-200 rounded-full cursor-pointer p-1">
+                            <div class="w-4 h-4 rounded-full bg-black shadow-md translate-x-6 transition-transform duration-300"></div>
+                        </div>
+
+                        <!-- Moon Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Copyright and Legal Links -->
+            <div class="border-t border-gray-100 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
+                <p>&copy; 2024 LazerDsgn. All rights reserved.</p>
+                <div class="flex space-x-6 mt-4 md:mt-0">
+                    <a href="#" class="hover:text-black transition">Privacy Policy</a>
+                    <a href="#" class="hover:text-black transition">Terms of Service</a>
+                    <a href="#" class="hover:text-black transition">Cookie Settings</a>
+                </div>
+            </div>
+
+        </div>
+    </footer>
+    
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" class="modal-overlay">
+        <div class="modal-content relative">
+            <button class="absolute top-4 right-4 text-gray-500 hover:text-black" onclick="closeModal('login-modal')">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h3 class="text-3xl font-extrabold mb-6">Log In</h3>
+            <!-- Updated form to call loginUser -->
+            <form onsubmit="loginUser(event)">
+                <div class="mb-4">
+                    <label for="login-email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                    <input type="email" id="login-email" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-black focus:border-black transition">
+                </div>
+                <div class="mb-6 relative">
+                    <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="login-password" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-black focus:border-black transition">
+                     <button type="button" onclick="togglePasswordVisibility('login-password', this)" class="absolute inset-y-0 right-0 top-6 px-3 flex items-center text-gray-500">
+                        <svg class="w-5 h-5"><use href="#icon-eye-off"></use></svg>
+                    </button>
+                </div>
+                <p id="login-error-message" class="text-sm text-red-500 mb-4 hidden">Invalid email or password.</p>
+                <button type="submit" class="w-full py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition">
+                    Sign In
+                </button>
+                <p class="text-center text-sm text-gray-500 mt-4">
+                    Don't have an account? <a href="#" class="text-black font-medium hover:underline" onclick="closeModal('login-modal'); openModal('signup-modal', event)">Sign up</a>
+                </p>
+                 <div class="relative my-6">
+                    <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="bg-white px-2 text-gray-500">OR</span>
+                    </div>
+                </div>
+
+                <!-- Google Sign In Button -->
+                <div>
+                    <button type="button" onclick="signInWithGoogle()" class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 48 48">
+                            <path d="M44.5,20.9H24v8.5h11.8C34.7,35.9,30.1,40,24,40c-6.6,0-12-5.4-12-12s5.4-12,12-12c3.6,0,6.8,1.6,9,4.2l6.4-6.4C35.8,5.5,30.3,3,24,3C12.4,3,3,12.4,3,24s9.4,21,21,21c11.2,0,20.2-9.2,20.2-20.5C44.2,22.7,44.5,20.9,44.5,20.9z"></path>
+                        </svg>
+                        <span>Continue with Google</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SIGNUP MODAL -->
+    <div id="signup-modal" class="modal-overlay">
+        <div class="modal-content relative">
+            <button class="absolute top-4 right-4 text-gray-500 hover:text-black" onclick="closeModal('signup-modal')">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h3 class="text-3xl font-extrabold mb-6">Create Account</h3>
+            <!-- Updated form to call signupUser -->
+            <form onsubmit="signupUser(event)">
+                 <div class="mb-4">
+                    <label for="signup-name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <input type="text" id="signup-name" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-black focus:border-black transition">
+                </div>
+                <div class="mb-4">
+                    <label for="signup-email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                    <input type="email" id="signup-email" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-black focus:border-black transition">
+                </div>
+                <div class="mb-6 relative">
+                    <label for="signup-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="signup-password" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-black focus:border-black transition">
+                    <button type="button" onclick="togglePasswordVisibility('signup-password', this)" class="absolute inset-y-0 right-0 top-6 px-3 flex items-center text-gray-500">
+                        <svg class="w-5 h-5"><use href="#icon-eye-off"></use></svg>
+                    </button>
+                </div>
+                <p id="signup-error-message" class="text-sm text-red-500 mb-4 hidden">Error creating account.</p>
+                <button type="submit" class="w-full py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition">
+                    Get Started
+                </button>
+                <p class="text-center text-sm text-gray-500 mt-4">
+                    Already have an account? <a href="#" class="text-black font-medium hover:underline" onclick="closeModal('signup-modal'); openModal('login-modal', event)">Log in</a>
+                </p>
+                 <div class="relative my-6">
+                    <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="bg-white px-2 text-gray-500">OR</span>
+                    </div>
+                </div>
+
+                <!-- Google Sign In Button -->
+                <div>
+                    <button type="button" onclick="signInWithGoogle()" class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 48 48">
+                            <path d="M44.5,20.9H24v8.5h11.8C34.7,35.9,30.1,40,24,40c-6.6,0-12-5.4-12-12s5.4-12,12-12c3.6,0,6.8,1.6,9,4.2l6.4-6.4C35.8,5.5,30.3,3,24,3C12.4,3,3,12.4,3,24s9.4,21,21,21c11.2,0,20.2-9.2,20.2-20.5C44.2,22.7,44.5,20.9,44.5,20.9z"></path>
+                        </svg>
+                        <span>Continue with Google</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- NEW: DELETE CONFIRMATION MODAL -->
+    <div id="delete-confirm-modal" class="modal-overlay">
+        <div class="modal-content relative">
+            <h3 class="text-2xl font-bold mb-4">Confirm Deletion</h3>
+            <p class="text-gray-600 mb-6">Are you sure you want to permanently delete the session: "<strong id="delete-session-title"></strong>"? This action cannot be undone.</p>
+            <div class="flex justify-end space-x-4">
+                <button class="px-4 py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300 transition" onclick="closeModal('delete-confirm-modal')">
+                    Cancel
+                </button>
+                <button id="confirm-delete-btn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition" onclick="confirmDelete()">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        // --- FIREBASE IMPORTS (Updated to use standard CDN paths) ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // MODIFIED: Added getDocs and where for the new chat session validation logic
+        import { getFirestore, collection, query, orderBy, addDoc, onSnapshot, serverTimestamp, doc, updateDoc, setLogLevel, getDocs, where, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- Firebase Debugging (MANDATORY for support) ---
+        setLogLevel('debug');
+
+        // --- FIREBASE CONFIGURATION (Using user-provided data) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyATQPz3s97OC_T0rBz0l_Tp0cImx_pc-M0",
+            authDomain: "lazerdsgn.firebaseapp.com",
+            projectId: "lazerdsgn",
+            storageBucket: "lazerdsgn.firebasestorage.app",
+            messagingSenderId: "382163178225",
+            appId: "1:382163178225:web:07cd8aa8d418f52bc44f50",
+            measurementId: "G-G8XF6Y8W6Z"
+        };
+        
+        // --- GLOBAL FIREBASE & APP STATE ---
+        let app, auth, db, userId = null;
+        let activeChatUnsubscribe = null;
+        let sessionsUnsubscribe = null;
+        
+        const HF_API_TOKEN = "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";
+        const WEBHOOK_URL = 'https://umarworks.app.n8n.cloud/webhook/chatinput';
+
+        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'default-lazerdsgn-app';
+        const CHATS_COLLECTION = `artifacts/${APP_ID}/users/`; // Base path for user-specific data
+        const TEMP_TITLE_PREFIX = 'New Chat -'; // Identifier for new sessions
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- GLOBAL HTML ELEMENT REFERENCES ---
+            const chatHistoryEl = document.getElementById('chat-history');
+            const chatMessagesEl = document.getElementById('chat-messages');
+            const homePageEl = document.getElementById('homepage-content');
+            const chatPageEl = document.getElementById('chat-page');
+            const footerEl = document.getElementById('footer');
+            const portfolioPageEl = document.getElementById('portfolio-page'); 
+            const defaultMessageEl = document.getElementById('default-message');
+            const authLinkContainer = document.getElementById('auth-link-container');
+            const userStatusText = document.getElementById('user-status-text');
+            const chatInput = document.getElementById('chat-input');
+            const sendButton = document.getElementById('send-button');
+            const newChatButton = document.getElementById('new-chat-btn');
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const closeMobileMenuButton = document.getElementById('close-mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const mobileAuthLinkContainer = document.getElementById('mobile-auth-link-container');
+            const chatSidebar = document.getElementById('chat-sidebar');
+            const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+            const mobileNewChatButton = document.getElementById('mobile-new-chat-button');
+            const backToChatBtn = document.getElementById('back-to-chat-btn');
+            const deleteSessionTitleEl = document.getElementById('delete-session-title');
+            const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+            const imageUploadButton = document.getElementById('image-upload-button');
+            const voiceButton = document.getElementById('voice-button');
+            const imageInput = document.getElementById('image-input');
+            const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+            const collapsedNewChatBtn = document.getElementById('collapsed-new-chat-btn');
+            const imageGenPage = document.getElementById('image-gen-page');
+            const generateImageBtn = document.getElementById('generate-image-btn');
+            const imagePromptInput = document.getElementById('image-prompt-input');
+            const imageDisplayArea = document.getElementById('image-display-area');
+            const imageLoadingIndicator = document.getElementById('image-loading-indicator');
+            const toggleChatSidebarButton = document.getElementById('toggle-chat-sidebar-button');
+
+            const mainContentPages = {
+                'home': homePageEl,
+                'chat': chatPageEl,
+                'portfolio': portfolioPageEl,
+                'image-gen': imageGenPage
+            };
+
+            // --- UTILITY FUNCTIONS ---
+            const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+            
+            window.copyToClipboard = function(text, btnEl) {
+                const originalHtml = btnEl.innerHTML;
+                let success = false;
+                
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed'; 
+                textarea.style.top = '0';
+                textarea.style.left = '0';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                
+                textarea.focus();
+                textarea.select();
+                
+                try {
+                    success = document.execCommand('copy');
+                    if (success) {
+                        showSuccess();
+                    } else {
+                        console.error('Copy command failed.');
+                    }
+                } catch (err) {
+                    console.error('Copy failed using execCommand:', err);
+                }
+                
+                document.body.removeChild(textarea);
+
+                function showSuccess() {
+                    btnEl.innerHTML = `<svg class="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`;
+                    setTimeout(() => {
+                        btnEl.innerHTML = originalHtml;
+                    }, 1500);
+                }
+            };
+
+            window.togglePasswordVisibility = function(inputId, buttonEl) {
+                const input = document.getElementById(inputId);
+                const iconUse = buttonEl.querySelector('svg use');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    iconUse.setAttribute('href', '#icon-eye');
+                } else {
+                    input.type = 'password';
+                    iconUse.setAttribute('href', '#icon-eye-off');
+                }
+            }
+
+            // --- FIREBASE INITIALIZATION & AUTH STATE LISTENER ---
+            function initializeFirebase() {
+                try {
+                    app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    
+                    onAuthStateChanged(auth, handleAuthChange);
+                    
+                } catch (error) {
+                    console.error("Firebase initialization error:", error);
+                    userStatusText.textContent = "Error: Firebase not initialized.";
+                }
+            }
+
+            async function handleAuthChange(user) {
+                if (sessionsUnsubscribe) sessionsUnsubscribe();
+                if (activeChatUnsubscribe) activeChatUnsubscribe();
+
+                if (user) {
+                    userId = user.uid;
+                    userStatusText.textContent = `Logged in as: ${user.email}`;
+                    
+                    authLinkContainer.innerHTML = `
+                        <a href="#" class="font-medium text-black border border-gray-300 rounded-full px-4 py-1.5 hover:bg-gray-50 transition" onclick="logoutUser(event)">Logout</a>
+                    `;
+                    mobileAuthLinkContainer.innerHTML = `
+                        <a href="#" class="font-medium text-black border border-gray-300 rounded-full px-5 py-2 hover:bg-gray-50 transition" onclick="logoutUser(event); closeMobileMenu();">Logout</a>
+                    `;
+
+                    sendButton.disabled = chatInput.value.trim() === '';
+                    chatInput.disabled = false;
+                    newChatButton.disabled = false;
+                    
+                    if (userId) {
+                        listenForChatSessions();
+                        
+                        await new Promise(resolve => setTimeout(resolve, 500)); 
+
+                        const visibleSessions = chatSessionsData.filter(s => !s.title.startsWith(TEMP_TITLE_PREFIX));
+                        const tempSessions = chatSessionsData.filter(s => s.title.startsWith(TEMP_TITLE_PREFIX));
+                        
+                        if (chatSessionsData.length === 0 || tempSessions.length === 0) {
+                            console.log("No default temp session found. Creating initial default.");
+                            await createInitialDefaultSession();
+                        } else if (!currentChatId) {
+                            window.loadChatSession(chatSessionsData[0].id);
+                        }
+
+                    } else {
+                        console.error("Authentication completed, but UID is missing. Cannot start chat listeners.");
+                    }
+                    
+                } else {
+                    userId = null;
+                    userStatusText.textContent = "Please Login or Signup.";
+                    
+                    authLinkContainer.innerHTML = `
+                        <a href="#" class="font-medium text-black border border-gray-300 rounded-full px-4 py-1.5 hover:bg-gray-50 transition" onclick="openModal('login-modal', event)">Login</a>
+                    `;
+                    mobileAuthLinkContainer.innerHTML = `
+                        <a href="#" class="font-medium text-black border border-gray-300 rounded-full px-5 py-2 hover:bg-gray-50 transition" onclick="openModal('login-modal', event); closeMobileMenu();">Login</a>
+                    `;
+                    
+                    chatHistoryEl.innerHTML = '';
+                    chatMessagesEl.innerHTML = '';
+                    currentChatId = null;
+                    if (defaultMessageEl) defaultMessageEl.classList.remove('hidden');
+                    sendButton.disabled = true;
+                    chatInput.disabled = true;
+                    newChatButton.disabled = true;
+                    
+                    if (!chatPageEl.classList.contains('hidden')) {
+                        navigateTo('home');
+                    }
+                }
+            }
+
+            async function createInitialDefaultSession() {
+                if (!userId) return;
+
+                const sessionsRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions`);
+                const tempTitle = `${TEMP_TITLE_PREFIX} ${new Date().toLocaleDateString()}`;
+                
+                try {
+                    const newSessionRef = await addDoc(sessionsRef, {
+                        title: tempTitle,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+                    console.log("Initial default session created:", newSessionRef.id);
+                    window.loadChatSession(newSessionRef.id);
+
+                } catch (error) {
+                    console.error("Error creating initial default chat session:", error);
+                }
+            }
+            
+            window.loginUser = async function(event) {
+                event.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                const errorEl = document.getElementById('login-error-message');
+                errorEl.classList.add('hidden');
+                
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    window.closeModal('login-modal');
+                } catch (error) {
+                    console.error("Login Error:", error.code, error.message);
+                    errorEl.textContent = "Invalid email or password.";
+                    errorEl.classList.remove('hidden');
+                }
+            }
+            
+            window.signupUser = async function(event) {
+                event.preventDefault();
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                const errorEl = document.getElementById('signup-error-message');
+                errorEl.classList.add('hidden');
+
+                try {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    window.closeModal('signup-modal');
+                } catch (error) {
+                    console.error("Sign Up Error:", error.code, error.message);
+                    errorEl.textContent = error.message.replace('Firebase:', '');
+                    errorEl.classList.remove('hidden');
+                }
+            }
+            
+            window.signInWithGoogle = async function() {
+                const provider = new GoogleAuthProvider();
+                try {
+                    await signInWithPopup(auth, provider);
+                    // The onAuthStateChanged listener will handle the successful login.
+                    closeModal('login-modal');
+                    closeModal('signup-modal');
+                } catch (error) {
+                    console.error("Google Sign-In Error:", error);
+                    if (error.code !== 'auth/cancelled-popup-request' && error.code !== 'auth/popup-closed-by-user') {
+                         showAlert("Failed to sign in with Google. Please try again.");
+                    }
+                }
+            }
+
+            window.logoutUser = function(event) {
+                if (event) event.preventDefault();
+                signOut(auth).catch((error) => console.error("Logout Error:", error));
+            }
+
+
+            // --- CHAT/FIRESTORE LOGIC ---
+            
+            let currentChatId = null;
+            let chatSessionsData = [];
+            
+            function listenForChatSessions() {
+                if (!userId) {
+                    console.error("listenForChatSessions called without valid userId.");
+                    return;
+                }
+                const sessionsRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions`);
+                const sessionsQuery = query(sessionsRef, orderBy('updatedAt', 'desc')); 
+
+                if (sessionsUnsubscribe) sessionsUnsubscribe();
+
+                sessionsUnsubscribe = onSnapshot(sessionsQuery, (snapshot) => {
+                    chatSessionsData = [];
+                    snapshot.forEach(doc => {
+                        chatSessionsData.push({ id: doc.id, ...doc.data() });
+                    });
+                    renderSidebar();
+                    
+                }, (error) => {
+                    console.error("Error fetching chat sessions:", error); 
+                    chatHistoryEl.innerHTML = `<p class="text-red-500 text-sm p-4">Error loading sessions. Check console for permissions error!</p>`;
+                });
+            }
+            
+            function renderSidebar() {
+                if (!chatHistoryEl) return;
+                chatHistoryEl.innerHTML = ''; 
+                
+                chatSessionsData
+                    .filter(session => !session.title.startsWith(TEMP_TITLE_PREFIX))
+                    .forEach(session => {
+                    const isActive = session.id === currentChatId;
+                    
+                    const containerDiv = document.createElement('div');
+                    containerDiv.className = `session-item-container ${isActive ? 'active' : ''}`;
+                    containerDiv.setAttribute('data-session-id', session.id);
+                    containerDiv.onclick = () => {
+                        window.loadChatSession(session.id);
+                        closeChatSidebar(); // Close sidebar on mobile after selection
+                    };
+                    
+                    const textWrapper = document.createElement('div');
+                    textWrapper.className = 'flex-grow min-w-0';
+
+                    const textSpan = document.createElement('span');
+                    textSpan.className = 'session-text text-sm block'; // block to allow time to be on next line
+                    textSpan.textContent = session.title;
+                    textSpan.contentEditable = "false";
+                    textSpan.setAttribute('data-original-title', session.title); 
+                    textSpan.setAttribute('data-session-id', session.id);
+
+                    textSpan.addEventListener('blur', (e) => {
+                        e.target.contentEditable = "false";
+                        const newTitle = e.target.textContent.trim();
+                        const sessionId = e.target.getAttribute('data-session-id');
+                        const originalTitle = e.target.getAttribute('data-original-title');
+
+                        if (newTitle && newTitle !== originalTitle) {
+                            window.saveSessionTitle(sessionId, newTitle);
+                        } else {
+                            e.target.textContent = originalTitle;
+                        }
+                    });
+
+                    textSpan.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault(); 
+                            e.target.blur();
+                        }
+                    });
+
+                    textWrapper.appendChild(textSpan);
+                    
+                    if (session.createdAt) {
+                        const timeSpan = document.createElement('span');
+                        timeSpan.className = 'text-xs text-gray-400 block px-1.5';
+                        timeSpan.textContent = session.createdAt.toDate().toLocaleDateString('en-US', {
+                            month: 'short', day: 'numeric', year: 'numeric'
+                        });
+                        textWrapper.appendChild(timeSpan);
+                    }
+
+                    const actionsMenu = document.createElement('div');
+                    actionsMenu.className = 'session-actions-menu';
+                    actionsMenu.onclick = (e) => e.stopPropagation();
+                    
+                    const renameBtn = document.createElement('button');
+                    renameBtn.setAttribute('title', 'Rename');
+                    renameBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-rename"></use></svg>`;
+                    renameBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        textSpan.contentEditable = "true";
+                        textSpan.focus();
+                        const range = document.createRange();
+                        range.selectNodeContents(textSpan);
+                        const sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                    };
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.setAttribute('title', 'Delete');
+                    deleteBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-trash"></use></svg>`;
+                    deleteBtn.onclick = (e) => { e.stopPropagation(); window.promptDelete(session.id, session.title); };
+
+                    actionsMenu.appendChild(renameBtn);
+                    actionsMenu.appendChild(deleteBtn);
+
+                    containerDiv.appendChild(textWrapper);
+                    containerDiv.appendChild(actionsMenu);
+                    chatHistoryEl.appendChild(containerDiv);
+                });
+            }
+            
+            window.saveSessionTitle = async function(sessionId, newTitle) {
+                 if (!userId) return;
+                try {
+                    const sessionDocRef = doc(db, `${CHATS_COLLECTION}${userId}/sessions`, sessionId);
+                    await updateDoc(sessionDocRef, { 
+                        title: newTitle,
+                        updatedAt: serverTimestamp()
+                    });
+                    showAlert(`Session renamed.`);
+                } catch (error) {
+                    console.error("Error renaming session:", error);
+                    showAlert("Failed to rename session.");
+                    const el = chatHistoryEl.querySelector(`[data-session-id="${sessionId}"] .session-text`);
+                    if (el) {
+                        el.textContent = el.getAttribute('data-original-title');
+                    }
+                }
+            }
+            
+            window.promptDelete = function(sessionId, title) {
+                deleteSessionTitleEl.textContent = title;
+                confirmDeleteBtn.setAttribute('data-session-id', sessionId);
+                openModal('delete-confirm-modal');
+            }
+
+            window.confirmDelete = function() {
+                const sessionId = confirmDeleteBtn.getAttribute('data-session-id');
+                if(sessionId) {
+                    window.deleteChatSession(sessionId);
+                }
+                closeModal('delete-confirm-modal');
+            }
+
+            window.deleteChatSession = async function(sessionId) {
+                try {
+                    const sessionDocRef = doc(db, `${CHATS_COLLECTION}${userId}/sessions`, sessionId);
+                    await deleteDoc(sessionDocRef);
+                    
+                    if (sessionId === currentChatId) {
+                        currentChatId = null;
+                        if (activeChatUnsubscribe) activeChatUnsubscribe();
+                        chatMessagesEl.innerHTML = '';
+                        if (defaultMessageEl) defaultMessageEl.classList.remove('hidden');
+                        
+                        const visibleSessions = chatSessionsData.filter(s => !s.title.startsWith(TEMP_TITLE_PREFIX) && s.id !== sessionId);
+                        if (visibleSessions.length === 0) {
+                            await createInitialDefaultSession();
+                        }
+                    }
+
+                    showAlert(`Session deleted.`);
+                } catch (error) {
+                    console.error("Error deleting session:", error);
+                    showAlert("Failed to delete session.");
+                }
+            }
+
+            window.loadChatSession = function(sessionId) {
+                if (!userId) {
+                    console.error("Cannot load chat: User not authenticated.");
+                    return;
+                }
+                
+                if (activeChatUnsubscribe) activeChatUnsubscribe();
+
+                currentChatId = sessionId;
+                renderSidebar();
+
+                const session = chatSessionsData.find(s => s.id === sessionId);
+                const title = session ? session.title : 'Chat Session'; 
+                
+                document.title = `${title} | LazerDsgn Chat`;
+                
+                if (!chatMessagesEl) return; 
+                
+                const messagesRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions/${sessionId}/messages`);
+                const messagesQuery = query(messagesRef, orderBy('createdAt', 'asc'));
+
+                activeChatUnsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+                    chatMessagesEl.innerHTML = '';
+                    
+                    if (snapshot.empty) {
+                        if (defaultMessageEl) defaultMessageEl.classList.remove('hidden');
+                    } else {
+                         if (defaultMessageEl) defaultMessageEl.classList.add('hidden');
+                        snapshot.forEach(doc => {
+                            const msg = doc.data();
+                            
+                            const msgContainer = document.createElement('div');
+                            msgContainer.className = `chat-message-container max-w-2xl font-normal w-full ${
+                                msg.role === 'user' ? 'self-end flex flex-col items-end' : 'self-start flex flex-col items-start'
+                            }`;
+                            
+                            const textEl = document.createElement('div');
+                            textEl.className = `chat-message-text text-base ${
+                                msg.role === 'user' ? 'self-end' : 'self-start'
+                            }`;
+                            if (msg.role === 'ai') {
+                                 textEl.classList.add('ai-text-content');
+                            }
+
+                            if (msg.imageUrl) {
+                                const img = document.createElement('img');
+                                img.src = msg.imageUrl;
+                                img.alt = "User uploaded image";
+                                img.className = 'rounded-lg max-w-xs max-h-48 mb-2';
+                                textEl.appendChild(img);
+                            }
+                            
+                            if (msg.text) {
+                                const p = document.createElement('p');
+                                p.textContent = msg.text;
+                                textEl.appendChild(p);
+                            }
+                            
+                            const actionsEl = document.createElement('div');
+                            actionsEl.className = 'chat-actions';
+                            
+                            const copyBtn = document.createElement('button');
+                            copyBtn.className = 'action-button copy';
+                            copyBtn.setAttribute('title', 'Copy text');
+                            copyBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-copy"></use></svg>`;
+                            copyBtn.onclick = (e) => window.copyToClipboard(msg.text, copyBtn);
+                            
+                            msgContainer.appendChild(textEl);
+
+                            if (msg.role === 'user') {
+                                actionsEl.classList.add('user');
+                                actionsEl.appendChild(copyBtn);
+                            } else {
+                                actionsEl.classList.add('ai');
+                                
+                                const goodBtn = document.createElement('button');
+                                goodBtn.className = 'action-button feedback';
+                                goodBtn.setAttribute('title', 'Good Response');
+                                goodBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-heart"></use></svg>`;
+                                const badBtn = document.createElement('button');
+                                badBtn.className = 'action-button feedback';
+                                badBtn.setAttribute('title', 'Bad Response');
+                                badBtn.innerHTML = `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-flag"></use></svg>`;
+
+                                const feedbackHandler = (e) => {
+                                    const clickedButton = e.currentTarget;
+                                    const otherButton = clickedButton === goodBtn ? badBtn : goodBtn;
+                                    otherButton.classList.remove('clicked');
+                                    clickedButton.classList.toggle('clicked');
+                                };
+
+                                goodBtn.onclick = feedbackHandler;
+                                badBtn.onclick = feedbackHandler;
+                                
+                                actionsEl.appendChild(goodBtn);
+                                actionsEl.appendChild(badBtn);
+                                actionsEl.appendChild(copyBtn);
+                            }
+
+                            msgContainer.appendChild(actionsEl);
+                            chatMessagesEl.appendChild(msgContainer);
+                        });
+                    }
+                    
+                    chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+
+                }, (error) => {
+                     console.error("Error fetching messages:", error);
+                     chatMessagesEl.innerHTML = `<p class="text-red-500 text-sm p-4 text-center">Error loading messages. Please check console.</p>`;
+                });
+            }
+            
+            window.createNewChatSession = async function() {
+                if (!userId) {
+                    openModal('login-modal', null);
+                    return;
+                }
+                
+                if (currentChatId) {
+                    const messagesRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions/${currentChatId}/messages`);
+                    const userMessagesQuery = query(messagesRef, where("role", "==", "user"));
+                    
+                    try {
+                        const snapshot = await getDocs(userMessagesQuery);
+                        
+                        if (snapshot.empty) {
+                            showAlert("Please send at least one message in the current chat before starting a new session.");
+                            return;
+                        }
+                    } catch (error) {
+                        console.error("Error checking current session for messages:", error);
+                        showAlert("Could not verify chat status. Please try again.");
+                        return;
+                    }
+                }
+
+                const sessionsRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions`);
+                const tempTitle = `${TEMP_TITLE_PREFIX} ${new Date().toLocaleDateString()}`;
+                
+                try {
+                    const newSessionRef = await addDoc(sessionsRef, {
+                        title: tempTitle,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+
+                    window.loadChatSession(newSessionRef.id);
+                    window.navigateTo('chat');
+
+                } catch (error) {
+                    console.error("Error creating new chat session:", error);
+                }
+            }
+            
+            async function generateChatTitle(sessionId, firstUserMessage) {
+                let newTitle = firstUserMessage.trim().substring(0, 40);
+                if (firstUserMessage.trim().length > 40) {
+                    newTitle += '...';
+                }
+                
+                newTitle = newTitle.replace(/[^\w\s\-\']/gi, '').trim();
+
+                if (!newTitle) {
+                    newTitle = 'Untitled Session';
+                }
+                
+                try {
+                    const sessionDocRef = doc(db, `${CHATS_COLLECTION}${userId}/sessions`, sessionId);
+                    await updateDoc(sessionDocRef, { 
+                        title: newTitle,
+                        updatedAt: serverTimestamp()
+                    });
+                    listenForChatSessions(); 
+                    console.log(`Session ${sessionId} title updated to: ${newTitle}`);
+
+                } catch (error) {
+                    console.error("Error updating chat session title:", error);
+                }
+            }
+            
+            async function sendUserMessage(imageUrl = null) {
+                if (!userId) {
+                    openModal('login-modal', null); 
+                    return;
+                }
+                
+                const message = chatInput.value.trim();
+                if (!message && !imageUrl) return;
+                
+                let sessionIdToUse = currentChatId;
+                let isFirstUserMessage = false;
+
+                if (!sessionIdToUse) {
+                    showAlert("Please click 'New Chat' or select an existing session to begin messaging.");
+                    return; 
+                } else {
+                    const currentSessionData = chatSessionsData.find(s => s.id === sessionIdToUse);
+                    const currentSessionTitle = currentSessionData ? currentSessionData.title : '';
+
+                    isFirstUserMessage = currentSessionTitle.startsWith(TEMP_TITLE_PREFIX);
+                }
+                
+                chatInput.value = '';
+                sendButton.disabled = true;
+
+                const messagesRef = collection(db, `${CHATS_COLLECTION}${userId}/sessions/${sessionIdToUse}/messages`);
+                
+                try {
+                    // 1. Save user message to Firestore
+                    const messageData = { 
+                        text: message, 
+                        role: 'user', 
+                        createdAt: serverTimestamp() 
+                    };
+                    if (imageUrl) {
+                        messageData.imageUrl = imageUrl;
+                    }
+                    await addDoc(messagesRef, messageData);
+                    
+                    if (isFirstUserMessage) {
+                        generateChatTitle(sessionIdToUse, message || "[Image]");
+                    }
+                    
+                    const loadingContainer = document.createElement('div');
+                    loadingContainer.className = 'chat-message-container ai loading max-w-2xl font-normal w-full self-start flex flex-col';
+                    const loadingTextEl = document.createElement('div');
+                    loadingTextEl.className = 'chat-message-text text-base';
+                    loadingTextEl.textContent = 'Assistant is typing...';
+                    loadingContainer.appendChild(loadingTextEl);
+                    
+                    if (chatMessagesEl) {
+                        chatMessagesEl.appendChild(loadingContainer);
+                        chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+                    }
+                    
+                    let aiResponseText = 'Error: Failed to fetch response from external webhook.';
+                    
+                    const payload = { message: message };
+                    const maxRetries = 3; 
+
+                    for (let i = 0; i < maxRetries; i++) {
+                        try {
+                            const response = await fetch(WEBHOOK_URL, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+
+                            if (!response.ok) {
+                                throw new Error(`External Webhook HTTP error! Status: ${response.status}`);
+                            }
+
+                            const result = await response.json();
+                            let rawText = '';
+                            
+                            // Attempting to extract text from common webhook response fields
+                            if (result && typeof result.output === 'string') {
+                                rawText = result.output;
+                            } else if (result && typeof result.text === 'string') {
+                                rawText = result.text;
+                            } else if (result && typeof result.response === 'string') {
+                                rawText = result.response;
+                            } else if (result) {
+                                // Fallback for complex webhook responses
+                                rawText = JSON.stringify(result, null, 2); 
+                            } else {
+                                rawText = 'Received empty response from the external webhook.';
+                            }
+
+                            // Clean the text to remove the JSON block
+                            aiResponseText = rawText.replace(/```json[\s\S]*?```/g, '').trim();
+
+                            break; 
+
+                        } catch (error) {
+                            console.error(`External Webhook attempt ${i + 1} failed:`, error);
+                            if (i < maxRetries - 1) {
+                                const delay = Math.pow(2, i) * 1000;
+                                await sleep(delay);
+                            } else {
+                                aiResponseText = `Final connection error after ${maxRetries} attempts: ${error.message}`;
+                            }
+                        }
+                    }
+                    
+                    loadingContainer.remove();
+
+                    await addDoc(messagesRef, { 
+                        text: aiResponseText, 
+                        role: 'ai', 
+                        createdAt: serverTimestamp() 
+                    });
+
+                    const sessionDocRef = doc(db, `${CHATS_COLLECTION}${userId}/sessions`, sessionIdToUse);
+                    await updateDoc(sessionDocRef, { updatedAt: serverTimestamp() });
+
+                } catch (error) {
+                    console.error("Error sending message or saving to Firestore:", error);
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'chat-message-container ai max-w-2xl font-normal w-full self-start flex flex-col';
+                    errorDiv.innerHTML = `<div class="chat-message-text text-base text-red-500">Error: ${error.message}</div>`;
+                    if(chatMessagesEl) chatMessagesEl.appendChild(errorDiv);
+                }
+            }
+
+            const alertPlaceholder = document.createElement('div');
+            alertPlaceholder.className = 'fixed bottom-4 right-4 bg-black text-white p-3 rounded-lg shadow-xl z-50 transition-opacity duration-300 opacity-0 pointer-events-none';
+            document.body.appendChild(alertPlaceholder);
+
+            function showAlert(message) {
+                alertPlaceholder.textContent = message;
+                alertPlaceholder.classList.remove('opacity-0', 'pointer-events-none');
+                alertPlaceholder.classList.add('opacity-100');
+                setTimeout(() => {
+                    alertPlaceholder.classList.remove('opacity-100');
+                    alertPlaceholder.classList.add('opacity-0', 'pointer-events-none');
+                }, 3000);
+            }
+
+            window.openModal = function(id, event) { 
+                if (event && typeof event.preventDefault === 'function') { 
+                    event.preventDefault();
+                }
+                const modal = document.getElementById(id);
+                if (modal) {
+                    if (id === 'login-modal') document.getElementById('login-error-message').classList.add('hidden');
+                    if (id === 'signup-modal') document.getElementById('signup-error-message').classList.add('hidden');
+                    
+                    modal.classList.add('open');
+                }
+            }
+
+            window.closeModal = function(id) {
+                const modal = document.getElementById(id);
+                if (modal) {
+                    modal.classList.remove('open');
+                }
+            }
+
+            window.closeMobileMenu = function() {
+                if (mobileMenu) {
+                    mobileMenu.classList.add('-translate-x-full');
+                }
+            }
+
+            function closeChatSidebar() {
+                if (chatSidebar && sidebarBackdrop) {
+                    chatSidebar.classList.add('-translate-x-full');
+                    sidebarBackdrop.classList.add('hidden');
+                }
+            }
+
+            window.navigateTo = function(page, event) {
+                if (event) {
+                    event.preventDefault();
+                }
+                
+                if (page === 'chat' || page === 'image-gen') {
+                    if (!auth || !auth.currentUser) {
+                        window.openModal('login-modal', event); 
+                        return;
+                    }
+                }
+
+                const targetEl = mainContentPages[page];
+                if (!targetEl) return;
+
+                Object.values(mainContentPages).forEach(el => {
+                    if (el) {
+                        el.classList.add('hidden');
+                        el.classList.remove('visible');
+                    }
+                });
+                footerEl.classList.add('hidden');
+
+                targetEl.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    targetEl.classList.add('visible');
+                }, 10);
+                
+                if (page === 'chat') {
+                    if (!currentChatId) {
+                        const visibleSessions = chatSessionsData.filter(s => !s.title.startsWith(TEMP_TITLE_PREFIX));
+                        if (visibleSessions.length > 0) {
+                            window.loadChatSession(visibleSessions[0].id);
+                        } else {
+                             if (chatSessionsData.length > 0) {
+                                window.loadChatSession(chatSessionsData[0].id);
+                            } else {
+                                if (defaultMessageEl) defaultMessageEl.classList.remove('hidden');
+                            }
+                        }
+                    } 
+                } else if (page === 'home' || page === 'portfolio') {
+                    footerEl.classList.remove('hidden');
+                }
+            }
+
+            async function generateImage() {
+                const prompt = imagePromptInput.value.trim();
+                if (!prompt) {
+                    showAlert("Please enter a prompt to generate an image.");
+                    return;
+                }
+
+                imageLoadingIndicator.classList.remove('hidden');
+                imageDisplayArea.innerHTML = '';
+                imageDisplayArea.appendChild(imageLoadingIndicator);
+
+                const API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0";
+                
+                try {
+                    const response = await fetch(API_URL, {
+                        headers: { 
+                            "Authorization": `Bearer ${HF_API_TOKEN}`,
+                            "Content-Type": "application/json" 
+                        },
+                        method: "POST",
+                        body: JSON.stringify({ "inputs": prompt }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const blob = await response.blob();
+                    const imageUrl = URL.createObjectURL(blob);
+                    
+                    const img = document.createElement('img');
+                    img.src = imageUrl;
+                    img.className = "max-w-full h-auto rounded-lg shadow-lg";
+                    imageDisplayArea.innerHTML = '';
+                    imageDisplayArea.appendChild(img);
+
+                } catch (error) {
+                    console.error("Image generation error:", error);
+                    showAlert("Failed to generate image. Please try again.");
+                    imageLoadingIndicator.classList.add('hidden');
+                }
+            }
+
+            initializeFirebase();
+
+            chatInput.addEventListener('input', () => {
+                sendButton.disabled = chatInput.value.trim() === '';
+            });
+
+            sendButton.addEventListener('click', () => sendUserMessage());
+
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendUserMessage();
+                }
+            });
+            
+            newChatButton.addEventListener('click', window.createNewChatSession);
+            if(collapsedNewChatBtn) collapsedNewChatBtn.addEventListener('click', window.createNewChatSession);
+            if(mobileNewChatButton) mobileNewChatButton.addEventListener('click', window.createNewChatSession);
+            
+            // Main mobile menu listeners
+            if(mobileMenuButton) mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.remove('-translate-x-full');
+            });
+
+            if(closeMobileMenuButton) closeMobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.add('-translate-x-full');
+            });
+
+            // Chat sidebar mobile listeners
+            if(toggleChatSidebarButton) toggleChatSidebarButton.addEventListener('click', () => {
+                chatSidebar.classList.remove('-translate-x-full');
+                sidebarBackdrop.classList.remove('hidden');
+            });
+            
+
+            if(sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeChatSidebar);
+            if(backToChatBtn) backToChatBtn.addEventListener('click', closeChatSidebar);
+
+            // Sidebar collapse/expand listener
+            const toggleSidebar = () => {
+                document.body.classList.toggle('sidebar-collapsed');
+                chatSidebar.classList.toggle('collapsed');
+            };
+            
+            if (sidebarToggleBtn) sidebarToggleBtn.addEventListener('click', toggleSidebar);
+
+            // --- New Feature Listeners ---
+            if(imageUploadButton) imageUploadButton.addEventListener('click', () => imageInput.click());
+            if(imageInput) imageInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    sendUserMessage(e.target.result);
+                };
+                reader.readAsDataURL(file);
+                e.target.value = ''; // Reset input
+            });
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                const recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.lang = 'en-US';
+                recognition.interimResults = false;
+                
+                recognition.onstart = () => voiceButton.classList.add('recording');
+                recognition.onend = () => voiceButton.classList.remove('recording');
+                recognition.onerror = (e) => {
+                    console.error("Speech Recognition Error", e.error);
+                    showAlert(`Voice error: ${e.error}`);
+                }
+                recognition.onresult = (e) => {
+                    chatInput.value += e.results[0][0].transcript;
+                    sendButton.disabled = false;
+                }
+                
+                voiceButton.addEventListener('click', () => {
+                    if (voiceButton.classList.contains('recording')) {
+                        recognition.stop();
+                    } else {
+                        recognition.start();
+                    }
+                });
+            } else {
+                voiceButton.disabled = true;
+                voiceButton.title = 'Voice recognition not supported in this browser.';
+            }
+
+            if(generateImageBtn) generateImageBtn.addEventListener('click', generateImage);
+
+        });
+    </script>
+
+</body>
+</html>
+
