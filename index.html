@@ -954,8 +954,8 @@
                     <address class="space-y-2 text-sm not-italic text-gray-600">
                         <p>101 Design Hub</p>
                         <p>Creative City, CC 90210</p>
-                        <p>Phone: (555) 789-0123</p>
-                        <p>Email: <a href="mailto:hello@lazerdsgn.com" class="hover:text-black transition">hello@lazerdsgn.com</a></p>
+                        <p>Phone: 03052888461</p>
+                        <p>Email: <a href="mailto:lazerdsgnworks@gmail.com" class="hover:text-black transition">hello@lazerdsgn.com</a></p>
                     </address>
                 </div>
 
@@ -1132,11 +1132,11 @@
 
 
     <script type="module">
-        // --- FIREBASE IMPORTS (Updated to use standard CDN paths) ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // MODIFIED: Added getDocs and where for the new chat session validation logic
-        import { getFirestore, collection, query, orderBy, addDoc, onSnapshot, serverTimestamp, doc, updateDoc, setLogLevel, getDocs, where, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // --- FIREBASE IMPORTS (CDN modules v12.4.0) ---
+        import { initializeApp, setLogLevel } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+        import { getFirestore, collection, query, orderBy, addDoc, onSnapshot, serverTimestamp, doc, updateDoc, getDocs, where, deleteDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";
         
         const { PDFDocument } = PDFLib;
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js`;
@@ -1144,24 +1144,24 @@
         // --- Firebase Debugging (MANDATORY for support) ---
         setLogLevel('debug');
 
-        // --- FIREBASE CONFIGURATION (Using user-provided data) ---
+        // --- FIREBASE CONFIGURATION (CDN project config provided by user) ---
         const firebaseConfig = {
-            apiKey: "AIzaSyATQPz3s97OC_T0rBz0l_Tp0cImx_pc-M0",
-            authDomain: "lazerdsgn.firebaseapp.com",
-            projectId: "lazerdsgn",
-            storageBucket: "lazerdsgn.firebasestorage.app",
-            messagingSenderId: "382163178225",
-            appId: "1:382163178225:web:07cd8aa8d418f52bc44f50",
-            measurementId: "G-G8XF6Y8W6Z"
+            apiKey: "AIzaSyDdAZDqeB2f2Q8ur6KOQZ6f-Xh6jDYXdao",
+            authDomain: "lazer-5b971.firebaseapp.com",
+            projectId: "lazer-5b971",
+            storageBucket: "lazer-5b971.firebasestorage.app",
+            messagingSenderId: "629892657121",
+            appId: "1:629892657121:web:6c974669d6a586e27d2ca0",
+            measurementId: "G-CQXF1Y0N78"
         };
-        
+
         // --- GLOBAL FIREBASE & APP STATE ---
-        let app, auth, db, userId = null;
+        let app, auth, db, analytics, userId = null;
         let activeChatUnsubscribe = null;
         let sessionsUnsubscribe = null;
         
-        const WEBHOOK_URL = 'https://umarworks.app.n8n.cloud/webhook/chatinput';
-        const ANALYSIS_WEBHOOK_URL = 'https://umarworks.app.n8n.cloud/webhook/analyze';
+        const WEBHOOK_URL = 'https://umarworks1.app.n8n.cloud/webhook/chatinput';
+        const ANALYSIS_WEBHOOK_URL = 'https://umarworks1.app.n8n.cloud/webhook/analyze';
 
         const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'default-lazerdsgn-app';
         const CHATS_COLLECTION = `artifacts/${APP_ID}/users/`; // Base path for user-specific data
